@@ -18,7 +18,7 @@ node -v
 
 ## Local Run
 
-First of all, you need to install the project's dependencies. Standing its root folder, do:
+First of all, you need to install the project's dependencies. Standing on its root folder, do:
 
 ```bash
 npm install
