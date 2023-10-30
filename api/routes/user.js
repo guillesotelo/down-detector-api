@@ -12,7 +12,13 @@ router.post('/login', async (req, res, next) => {
     try {
         const { email, password } = req.body
 
+        // This three lines creates a new user at login.
+        // const newUser = await User.create({ ...req.body, username: 'Guillermo Sotelo', isSuper: true })
+        // const jwtToken = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
+        // return res.status(200).json({ ...newUser._doc, password: null, token: jwtToken })
+
         const user = await User.findOne({ email }).exec()
+
         if (!user) return res.status(401).json({ message: 'Email not found' })
 
         const compareRes = await user.comparePassword(password)
@@ -20,37 +26,25 @@ router.post('/login', async (req, res, next) => {
 
         const token = jwt.sign({ sub: user._id }, JWT_SECRET, { expiresIn: '30d' })
 
-        const {
-            _id,
-            updatedAt,
-            createdAt,
-            username
-        } = user
-
-        res.status(200).json({
-            _id,
-            updatedAt,
-            createdAt,
-            username,
-            token
-        })
-
-
+        res.status(200).json({ ...user._doc, password: null, token })
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
 // Verify user token
 router.post('/verify', async (req, res, next) => {
     try {
+        const { email } = req.body
         const bearerHeader = req.headers['authorization']
         if (bearerHeader) {
             const bearerToken = bearerHeader.split(' ')[1]
-            jwt.verify(bearerToken, JWT_SECRET, (error, _) => {
-                if (error) return res.sendStatus(403)
-                res.status(200).json({ token: bearerToken })
+            jwt.verify(bearerToken, JWT_SECRET, async (error, _) => {
+                if (error) return res.status(403)
+
+                const userData = await User.findOne({ email }).exec()
+                res.status(200).json({ ...userData._doc, token: bearerToken })
             })
         } else res.status(403)
     } catch (err) {
@@ -104,7 +98,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         if (!user) return res.status(401).send('User not found')
 
         const removed = await User.deleteOne({ email })
-        if(!removed) return res.status(404).send('Error deleting user')
+        if (!removed) return res.status(404).send('Error deleting user')
 
         res.status(200).send('User removed successfully')
     } catch (err) {
