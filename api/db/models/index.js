@@ -1,7 +1,15 @@
 const User = require("./User");
-const Endpoint = require("./Endpoint");
+const System = require("./System");
+const Event = require("./Event");
+const History = require("./History");
+const AppLog = require("./AppLog");
+const UserAlert = require("./UserAlert");
 
 module.exports = {
   User,
-  Endpoint
+  System,
+  Event,
+  History,
+  AppLog,
+  UserAlert
 };

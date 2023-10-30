@@ -23,10 +23,10 @@ const verifyToken = (req, res, next) => {
     if (bearerHeader) {
         const bearerToken = bearerHeader.split(' ')[1]
         jwt.verify(bearerToken, JWT_SECRET, (error, _) => {
-            if (error) return res.sendStatus(403)
+            if (error) return res.status(403)
             next()
         })
-    } else res.sendStatus(403)
+    } else res.status(403)
 }
 
 module.exports = {

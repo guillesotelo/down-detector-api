@@ -3,6 +3,7 @@ const morgan = require("morgan")
 const cors = require('cors')
 const { connection } = require("./api/db")
 const routes = require("./api/routes")
+const { runSystemCheckLoop } = require("./api/helpers/statusCheck")
 const app = express()
 
 app.use(cors({
@@ -10,9 +11,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH']
 }))
 app.use(morgan("dev"))
-
-// app.use(express.json())
-// app.use(express.urlencoded({ extended: true }))
 
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true, parameterLimit: 1000000 }));
@@ -34,7 +32,7 @@ const PORT = process.env.PORT || 5000
 // }
 
 app.get('/', (_, res) => {
-  res.status(200).send('Server up and running')
+  res.status(200).send('DownDetector API [Status: OK]')
 })
 
 connection.on("error", console.error.bind("Connection error: ", console))
@@ -42,5 +40,7 @@ connection.on("error", console.error.bind("Connection error: ", console))
 connection.once("open", () => {
   app.listen(PORT, () => console.log(`Server listening on Port: ${PORT}...`))
 })
+
+runSystemCheckLoop()
 
 module.exports = app
