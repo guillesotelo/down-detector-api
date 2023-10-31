@@ -1,4 +1,4 @@
-const { System } = require("../db/models")
+const { System, History } = require("../db/models")
 let isSystemCheckRunning = false
 
 const checkApiStatus = async (system) => {
@@ -30,16 +30,19 @@ const checkApiStatus = async (system) => {
 
 const checkAllSystems = async () => {
     const systems = await System.find({ active: true })
-    if (systems && Array.isArray(systems) && systems.length) {
+    if (systems && systems.length) {
         const promises = systems.map(async (system) => {
             const { status } = await checkApiStatus(system)
-            if (status !== system.status) {
-                return System.findByIdAndUpdate(
-                    system._id,
-                    { status },
-                    { returnDocument: "after", useFindAndModify: false }
-                )
-            }
+            const exists = await History.findOne({ systemId: system._id }).exec()
+            if (exists && exists._id) {
+                if (status !== exists.status) {
+                    return await History.findByIdAndUpdate(
+                        exists._id,
+                        { status },
+                        { returnDocument: "after", useFindAndModify: false }
+                    )
+                }
+            } else return await History.create({ ...system._doc, systemId: system._id, status })
         })
 
         const updatedSystems = await Promise.all(promises)
@@ -54,7 +57,7 @@ const runSystemCheckLoop = async (interval) => {
     if (isSystemCheckRunning) return
     isSystemCheckRunning = true
 
-    try {
+    try { 
         await checkAllSystems()
     } catch (error) {
         console.error('Error running system check:', error)

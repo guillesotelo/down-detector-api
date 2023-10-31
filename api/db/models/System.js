@@ -23,7 +23,7 @@ const systemSchema = new mongoose.Schema({
     createdBy: {
         type: String
     },
-    modifiedBy: {
+    updatedBy: {
         type: String
     },
     active: {

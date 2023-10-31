@@ -5,8 +5,7 @@ const historySchema = new mongoose.Schema({
         type: String
     },
     url: {
-        type: String,
-        required: true
+        type: String
     },
     status: {
         type: Boolean
