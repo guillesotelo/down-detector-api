@@ -68,7 +68,7 @@ router.post('/create', async (req, res, next) => {
         res.status(201).send(`User created successfully`)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -85,7 +85,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         res.status(200).json({ ...newUser._doc, token })
     } catch (err) {
         console.error('Something went wrong!', err)
-        return res.send(500).send('Server Error')
+        return res.status(500).send('Server Error')
     }
 })
 
@@ -103,7 +103,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         res.status(200).send('User removed successfully')
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 

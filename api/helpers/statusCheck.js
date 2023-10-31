@@ -32,8 +32,8 @@ const checkAllSystems = async () => {
     const systems = await System.find({ active: true })
     if (systems && Array.isArray(systems) && systems.length) {
         const promises = systems.map(async (system) => {
-            const status = await checkApiStatus(system)
-            if (status.status !== system.status) {
+            const { status } = await checkApiStatus(system)
+            if (status !== system.status) {
                 return System.findByIdAndUpdate(
                     system._id,
                     { status },

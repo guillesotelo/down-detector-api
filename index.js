@@ -41,6 +41,6 @@ connection.once("open", () => {
   app.listen(PORT, () => console.log(`Server listening on Port: ${PORT}...`))
 })
 
-runSystemCheckLoop()
+// runSystemCheckLoop()
 
 module.exports = app
