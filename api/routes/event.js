@@ -6,13 +6,13 @@ const router = express.Router()
 //Get all events
 router.get('/getAll', async (req, res, next) => {
     try {
-        const events = await Event.find({ active: true }).sort({ createdAt: -1 })
+        const events = await Event.find().sort({ createdAt: -1 })
         if (!events) return res.status(404).send('No events found')
 
         res.status(200).json(events)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -26,7 +26,7 @@ router.get('/getById', async (req, res, next) => {
         res.status(200).json(event)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -39,7 +39,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
         res.status(200).json(newEvent)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -55,7 +55,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         res.status(200).json(updated)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -69,7 +69,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         res.status(200).json(`Event ${_id} deleted`)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 

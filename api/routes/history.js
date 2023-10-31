@@ -12,7 +12,7 @@ router.get('/getAll', async (req, res, next) => {
         res.status(200).json(histories)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -26,7 +26,7 @@ router.get('/getById', async (req, res, next) => {
         res.status(200).json(history)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -39,7 +39,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
         res.status(200).json(newHistory)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -55,7 +55,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         res.status(200).json(updated)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 
@@ -69,7 +69,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         res.status(200).json(`History ${_id} deleted`)
     } catch (err) {
         console.error('Something went wrong!', err)
-        res.send(500).send('Server Error')
+        res.status(500).send('Server Error')
     }
 })
 

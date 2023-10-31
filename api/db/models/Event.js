@@ -10,13 +10,13 @@ const eventSchema = new mongoose.Schema({
     end: {
         type: Date
     },
-    createdBy: {
+    updatedBy: {
         type: String
     },
     systemId: {
         type: String
     },
-    message: {
+    note: {
         type: String
     },
 }, { timestamps: true })
