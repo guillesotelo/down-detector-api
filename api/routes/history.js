@@ -30,6 +30,20 @@ router.get('/getById', async (req, res, next) => {
     }
 })
 
+//Get History by systemId
+router.get('/getBySystemId', async (req, res, next) => {
+    try {
+        const { _id } = req.query
+        const history = await History.find({ systemId: _id }).sort({ createdAt: -1 })
+        if (!history) return res.status(404).send('History not found for given system')
+
+        res.status(200).json(history)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
 //Create new History
 router.post('/create', verifyToken, async (req, res, next) => {
     try {

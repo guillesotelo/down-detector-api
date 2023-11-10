@@ -26,6 +26,13 @@ const systemSchema = new mongoose.Schema({
     updatedBy: {
         type: String
     },
+    lastCheck: {
+        type: Date,
+        default: new Date()
+    },
+    lastCheckStatus: {
+        type: Boolean
+    },
     active: {
         type: Boolean,
         default: true

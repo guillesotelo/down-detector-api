@@ -72,6 +72,19 @@ router.post('/create', async (req, res, next) => {
     }
 })
 
+//Get all users
+router.get('/getAll', verifyToken, async (req, res, next) => {
+    try {
+        const users = await User.find().select('-password').sort({ createdAt: -1 })
+        if (!users) return res.status(404).send('No users found')
+
+        res.status(200).json(users)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
 //Update User Data
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
