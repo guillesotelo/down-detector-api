@@ -1,5 +1,5 @@
 const { System, History } = require("../db/models")
-let isSystemCheckRunning = false
+let intervalId = null
 
 const checkApiStatus = async (system) => {
     try {
@@ -31,41 +31,46 @@ const checkApiStatus = async (system) => {
 const checkAllSystems = async () => {
     const systems = await System.find({ active: true })
     if (systems && systems.length) {
+        let updatedCount = 0
+
         const promises = systems.map(async (system) => {
             const { status } = await checkApiStatus(system)
-            const exists = await History.findOne({ systemId: system._id }).exec()
-            if (exists && exists._id) {
-                if (status !== exists.status) {
-                    return await History.findByIdAndUpdate(
-                        exists._id,
-                        { status },
-                        { returnDocument: "after", useFindAndModify: false }
-                    )
-                }
-            } else return await History.create({ ...system._doc, systemId: system._id, status })
+            const exists = await History.find({ systemId: system._id }).sort({ createdAt: -1 })
+            await System.findByIdAndUpdate(system._id, { lastCheck: new Date(), lastCheckStatus: status }, { returnDocument: "after", useFindAndModify: false })
+
+            if (exists && exists.length && exists[0]._id) {
+                if (status !== exists[0].status) {
+                    updatedCount++
+                    return await History.create({
+                        systemId: system._id,
+                        url: system.url,
+                        status,
+                        description: system.description
+                    })
+                } else return exists[0]
+            } else return await History.create({
+                systemId: system._id,
+                url: system.url,
+                status,
+                description: system.description
+            })
         })
 
         const updatedSystems = await Promise.all(promises)
         updatedSystems.forEach((updated, index) => {
-            if (!updated) console.error(`Unable to update system status: ${JSON.stringify(systems[index])}`)
+            if (!updated) console.error(`Unable to update system status: ${systems[index].name}`)
         })
-        console.log('System Check Loop finished.')
+        console.log(`[${new Date().toLocaleString()}] System status updated: ${updatedCount}`)
     }
 }
 
 const runSystemCheckLoop = async (interval) => {
-    if (isSystemCheckRunning) return
-    isSystemCheckRunning = true
-
-    try { 
+    try {
         await checkAllSystems()
+        intervalId = setInterval(checkAllSystems, interval || 600000)
     } catch (error) {
         console.error('Error running system check:', error)
-    } finally {
-        isSystemCheckRunning = false
     }
-
-    setTimeout(runSystemCheckLoop, interval || 600000)
 }
 
 module.exports = {

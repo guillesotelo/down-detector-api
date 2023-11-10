@@ -1,6 +1,7 @@
 const express = require('express')
-const { System, Event } = require('../db/models')
+const { System, Event, History } = require('../db/models')
 const { verifyToken } = require('../helpers')
+const { checkApiStatus } = require('../helpers/statusCheck')
 const router = express.Router()
 
 //Get all systems
@@ -44,9 +45,12 @@ router.post('/create', verifyToken, async (req, res, next) => {
 
             const savedSystems = await Promise.all(promises)
             savedSystems.forEach((updated, index) => {
-                if (!updated) console.error(`Unable to save system: ${JSON.stringify(downtimeArray[index])}`)
+                if (!updated) console.error(`Unable to save downtime data: ${JSON.stringify(downtimeArray[index])}`)
             })
         }
+
+        const { status } = await checkApiStatus(newSystem)
+        await History.create({ ...newSystem._doc, systemId: newSystem._id, status })
 
         res.status(200).json(newSystem)
     } catch (err) {
@@ -75,6 +79,19 @@ router.post('/update', verifyToken, async (req, res, next) => {
             savedSystems.forEach((updated, index) => {
                 if (!updated) console.error(`Unable to save system: ${JSON.stringify(downtimeArray[index])}`)
             })
+        }
+
+        const { status } = await checkApiStatus(updated)
+        const exists = await History.find({ systemId: updated._id }).sort({ createdAt: -1 })
+        if (exists && exists.length && exists[0]._id) {
+            if (status !== exists[0].status) {
+                await History.create({
+                    systemId: updated._id,
+                    url: updated.url,
+                    status,
+                    description: updated.description
+                })
+            }
         }
 
         res.status(200).json(updated)
