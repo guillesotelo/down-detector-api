@@ -6,7 +6,10 @@ const router = express.Router()
 //Get all histories
 router.get('/getAll', async (req, res, next) => {
     try {
-        const histories = await History.find().sort({ createdAt: -1 })
+        const { systemId } = req.params
+        const histories = systemId ?
+            await History.find({ systemId }).sort({ createdAt: -1 }) :
+            await History.find().sort({ createdAt: -1 })
         if (!histories) return res.status(404).send('No histories found')
 
         res.status(200).json(histories)
