@@ -89,9 +89,8 @@ router.get('/getAll', verifyToken, async (req, res, next) => {
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
         const { _id, newData } = req.body
-
         const newUser = await User.findByIdAndUpdate(_id, newData, { returnDocument: "after", useFindAndModify: false }).select('-password')
-        if (!newUser) return res.status(404).send('Error updating User')
+        if (!newUser) return res.status(500).send('Error updating User')
 
         const token = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
 
