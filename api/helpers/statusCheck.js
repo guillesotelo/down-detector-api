@@ -33,6 +33,8 @@ const checkAllSystems = async () => {
     if (systems && systems.length) {
         let updatedCount = 0
 
+        // ADD REPORT THREESHOLD LOGIC
+
         const promises = systems.map(async (system) => {
             const { status } = await checkApiStatus(system)
             const exists = await History.find({ systemId: system._id }).sort({ createdAt: -1 })
