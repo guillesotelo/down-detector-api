@@ -1,12 +1,12 @@
 const express = require('express')
-const { History } = require('../db/models')
+const { History, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
 
 //Get all histories
 router.get('/getAll', async (req, res, next) => {
     try {
-        const { systemId } = req.params
+        const { systemId } = req.query
         const histories = systemId ?
             await History.find({ systemId }).sort({ createdAt: -1 }) :
             await History.find().sort({ createdAt: -1 })
@@ -53,6 +53,13 @@ router.post('/create', verifyToken, async (req, res, next) => {
         const newHistory = await History.create(req.body)
         if (!newHistory) return res.status(400).json('Error creating history')
 
+        await AppLog.create({
+            username: 'App',
+            email: 'down@company.com',
+            details: `History created: ${newHistory.url} - Status: ${newHistory.status ? 'UP' : 'DOWN'} - System: ${updated.systemId}`,
+            module: 'History'
+        })
+
         res.status(200).json(newHistory)
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -69,6 +76,13 @@ router.post('/update', verifyToken, async (req, res, next) => {
         const updated = await History.findByIdAndUpdate(_id, historyData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(404).send('Error updating History')
 
+        await AppLog.create({
+            username: 'App',
+            email: 'down@company.com',
+            details: `History updated: ${updated.url} - Status: ${updated.status ? 'UP' : 'DOWN'} - System: ${updated.systemId}`,
+            module: 'History'
+        })
+
         res.status(200).json(updated)
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -80,8 +94,15 @@ router.post('/update', verifyToken, async (req, res, next) => {
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.body
+        const history = await History.findById(_id)
+        await History.remove({ _id })
 
-        await history.remove({ _id })
+        await AppLog.create({
+            username: 'App',
+            email: 'down@company.com',
+            details: `History removed: ${history.url} - System: ${updated.systemId}`,
+            module: 'History'
+        })
 
         res.status(200).json(`History ${_id} deleted`)
     } catch (err) {

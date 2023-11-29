@@ -1,12 +1,12 @@
 const express = require('express')
-const { UserAlert } = require('../db/models')
+const { UserAlert, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
 
 //Get all UserAlerts
 router.get('/getAll', async (req, res, next) => {
     try {
-        const { systemId } = req.params
+        const { systemId } = req.query
         const userAlerts = systemId ?
             await UserAlert.find({ systemId }).sort({ createdAt: -1 }) :
             await UserAlert.find().sort({ createdAt: -1 })
@@ -39,6 +39,13 @@ router.post('/create', verifyToken, async (req, res, next) => {
         const newUserAlert = await UserAlert.create(req.body)
         if (!newUserAlert) return res.status(400).json('Error creating User Alert')
 
+        await AppLog.create({
+            username: newUserAlert.createdBy || '',
+            email: 'down@company.com',
+            details: `Alert created: ${newUserAlert.url} - System: ${newUserAlert.systemId}`,
+            module: 'User Alert'
+        })
+
         res.status(200).json(newUserAlert)
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -55,6 +62,13 @@ router.post('/update', verifyToken, async (req, res, next) => {
         const updated = await UserAlert.findByIdAndUpdate(_id, userAlertData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(404).send('Error updating User Alert')
 
+        await AppLog.create({
+            username: updated.createdBy || '',
+            email: 'down@company.com',
+            details: `Alert updated: ${updated.url} - System: ${updated.systemId}`,
+            module: 'User Alert'
+        })
+
         res.status(200).json(updated)
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -66,8 +80,16 @@ router.post('/update', verifyToken, async (req, res, next) => {
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.body
+        const alert = await UserAlert.findById(_id)
 
         await UserAlert.remove({ _id })
+
+        await AppLog.create({
+            username: alert.createdBy || '',
+            email: 'down@company.com',
+            details: `Alert removed: ${alert.url} - System: ${alert.systemId}`,
+            module: 'User Alert'
+        })
 
         res.status(200).json(`User Alert ${_id} deleted`)
     } catch (err) {

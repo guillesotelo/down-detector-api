@@ -1,5 +1,5 @@
 const express = require('express')
-const { System, Event, History } = require('../db/models')
+const { System, Event, History, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const { checkApiStatus } = require('../helpers/statusCheck')
 const router = express.Router()
@@ -38,6 +38,13 @@ router.post('/create', verifyToken, async (req, res, next) => {
         const newSystem = await System.create(req.body)
         if (!newSystem) return res.status(400).json('Error creating system')
 
+        await AppLog.create({
+            username: newSystem.createdBy || '',
+            email: 'down@company.com',
+            details: `System created: ${newSystem.name} - ${newSystem.url}`,
+            module: 'System'
+        })
+
         if (downtimeArray && downtimeArray.length) {
             const promises = downtimeArray.map(async (downtime) => {
                 return await Event.create({ ...downtime, systemId: newSystem._id })
@@ -67,6 +74,13 @@ router.post('/update', verifyToken, async (req, res, next) => {
 
         const updated = await System.findByIdAndUpdate(_id, systemData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(404).send('Error updating system')
+
+        await AppLog.create({
+            username: updated.createdBy || '',
+            email: 'down@company.com',
+            details: `System updated: ${updated.name} - ${updated.url}`,
+            module: 'System'
+        })
 
         if (downtimeArray && downtimeArray.length) {
             const promises = downtimeArray.map(async (downtime) => {
@@ -105,8 +119,16 @@ router.post('/update', verifyToken, async (req, res, next) => {
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.body
+        const system = await System.findById(_id)
 
         await System.remove({ _id })
+
+        await AppLog.create({
+            username: system.createdBy || '',
+            email: 'down@company.com',
+            details: `System removed: ${system.name} - ${system.url}`,
+            module: 'System'
+        })
 
         res.status(200).json(`System ${_id} deleted`)
     } catch (err) {

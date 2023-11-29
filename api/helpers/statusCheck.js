@@ -1,4 +1,4 @@
-const { System, History } = require("../db/models")
+const { System, History, AppLog } = require("../db/models")
 let intervalId = null
 
 const checkApiStatus = async (system) => {
@@ -63,6 +63,12 @@ const checkAllSystems = async () => {
             if (!updated) console.error(`Unable to update system status: ${systems[index].name}`)
         })
         console.log(`[${new Date().toLocaleString()}] System status updated: ${updatedCount}`)
+        await AppLog.create({
+            username: 'App',
+            email: 'down@company.com',
+            details: `Checked all systems. ${updatedCount ? `Updated: ${updatedCount}.` : 'No updates.'}`,
+            module: 'API'
+        })
     }
 }
 
