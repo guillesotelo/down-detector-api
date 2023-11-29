@@ -1,5 +1,5 @@
 const express = require('express')
-const { Event } = require('../db/models')
+const { Event, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
 
@@ -36,6 +36,13 @@ router.post('/create', verifyToken, async (req, res, next) => {
         const newEvent = await Event.create(req.body)
         if (!newEvent) return res.status(400).json('Error creating event')
 
+        await AppLog.create({
+            username: newEvent.updatedBy || '',
+            email: '',
+            details: `Event created: ${newEvent.url} - ${new Date(newEvent.start).toLocaleString()} to ${new Date(newEvent.end).toLocaleString()}`,
+            module: 'Event'
+        })
+
         res.status(200).json(newEvent)
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -52,6 +59,13 @@ router.post('/update', verifyToken, async (req, res, next) => {
         const updated = await Event.findByIdAndUpdate(_id, eventData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(404).send('Error updating event')
 
+        await AppLog.create({
+            username: updated.updatedBy || '',
+            email: '',
+            details: `Event updated: ${updated.url} - ${new Date(updated.start).toLocaleString()} to ${new Date(updated.end).toLocaleString()}`,
+            module: 'Event'
+        })
+
         res.status(200).json(updated)
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -63,8 +77,15 @@ router.post('/update', verifyToken, async (req, res, next) => {
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.body
-
+        const event = await Event.findById(_id)
         await Event.remove({ _id })
+
+        await AppLog.create({
+            username: event.updatedBy || '',
+            email: '',
+            details: `Event removed: ${event.url} - ${new Date(event.start).toLocaleString()} to ${new Date(event.end).toLocaleString()}`,
+            module: 'Event'
+        })
 
         res.status(200).json(`Event ${_id} deleted`)
     } catch (err) {

@@ -1,15 +1,18 @@
 # Introduction
 
-In this server we setup all the frontend logic. To achieve this, we use React served as a Node app connected to Apache.
+In this server, we set up all the frontend logic. To achieve this, we use React served as a Node app connected to Apache.
 
 ## Prerequisites
 
-To run this server locally, you need to have installed Node ^18.x. Follow this command to get it on Ubuntu machines:
+To run this server locally, you need to have installed Node ^18.x.
+
+> Note: It is recommended to use the native console from Ubuntu to connect to the server via ssh using the syntax: `ssh user@ip.address`
+
+Follow this command to get it on Ubuntu machines:
 
 ```bash
 cd ~
-curl -sL https://deb.nodesource.com/setup_20.8 -o nodesource_setup.sh
-sudo bash nodesource_setup.sh
+curl -s https://deb.nodesource.com/setup_19.x | sudo -E bash -
 sudo apt install nodejs
 node -v
 ```
@@ -55,7 +58,7 @@ sudo apt-get update
 sudo apt-get install apache2
 ```
 
-Since Apache runs automatically after installatino, we can now check if has been installed correctly by going to `http://127.0.0.1`. From console: `xdg-open http://127.0.0.1`
+Since Apache runs automatically after installation, we can now check if has been installed correctly by going to `http://127.0.0.1`. From console: `xdg-open http://127.0.0.1`
 This should show us the Apache2 Ubuntu Default Page.
 
 After this, check the machine IP:
@@ -64,7 +67,7 @@ After this, check the machine IP:
 ip a
 ```
 
-If you paste the IP in the browser, or open it with the previous command, you should see the same default page from Apache.
+If you paste the IP in the browser or open it with the previous command, you should see the same default page from Apache.
 We can confirm the status with:
 
 ```bash
@@ -73,7 +76,7 @@ sudo systemctl status apache2
 
 ### Connect the Node App with Apache
 
-After a successfully setup of Apache Server, we can connect our Node application.
+After a successful setup of Apache Server, we can connect our Node application.
 
 #### Creating the Apache configuration file
 
@@ -88,7 +91,7 @@ sudo nano 000-default.conf
 ```
 
 The Apache VirtualHost is defined in the 000-default.conf file and is set up to listen for requests on port 80.
-We’ll configure the 000-default.conf file so that all requests coming in via port 80 will be proxied, or forwarded, to the Node application running on port 5000 (or the one we previusly configured in our environment).
+We’ll configure the 000-default.conf file so that all requests coming in via port 80 will be proxied, or forwarded, to the Node application running on port 5000 (or the one we previously configured in our environment).
 
 We use ProxyPass to map the root URL at the specified address: `http://localhost:5000`.
 Copy the following line into the default.config file:
@@ -123,7 +126,7 @@ So you would have something like this:
 </VirtualHost>
 ```
 
-After this we need to map our ServerName's placeholders in our hosts file:
+After this, we need to map our ServerName's placeholders in our host file:
 
 ```bash
 sudo nano /etc/hosts
@@ -150,18 +153,11 @@ sudo a2enmod
 
 a2enmod is an acronym for “Apache2 enable module.” Running this command will list all modules that are available to be enabled.
 Next, we are prompted to enter the name of a module that we’d like to enable.
-We enter proxy at the prompt to enable the proxy module:
+We enter the proxy at the prompt to enable the proxy module:
 
 ```bash
 # Which module(s) do you want to enable (wildcards ok)?
 proxy
-```
-
-Next, we enter proxy_http at the prompt to enable the proxy_http module:
-
-```bash
-# Which module(s) do you want to enable (wildcards ok)?
-proxy_http
 ```
 
 Now we do the same for module `proxy_http`:
@@ -177,7 +173,7 @@ proxy_http
 
 #### Applying the configuration
 
-Because we changed the configuration file, we must reload the Apache server in order to apply the configuration.
+Because we changed the configuration file, we must reload the Apache server to apply the configuration.
 In the sites-enabled directory, use the following command to reload the apache2 server, then stop and restart it:
 
 ```bash
@@ -196,7 +192,7 @@ Finally, we can test everything's correct by going to `http://localhost:80`. We 
 
 #### Installation
 
-First install gnupg and curl if they are not already available:
+First, install `gnupg` and curl if they are not already available:
 
 ```bash
 sudo apt-get install gnupg curl
@@ -250,7 +246,7 @@ Check status:
 sudo systemctl status mongod
 ```
 
-Run app and check it connects to mongo instance:
+Run the app and check it connects to Mongo instance:
 
 ```bash
 npm run dev
@@ -271,6 +267,6 @@ mongodb-compass
 
 ##### New Connection
 
-From the new window panel, start a new connection to MongoDB making sure the paramenters are correct. In this case we use the default PORT 27017.
+From the new window panel, start a new connection to MongoDB making sure the parameters are correct. In this case, we use the default PORT 27017.
 
 You will see the main DB with all the collections. Search for `downddetector` collection and look for the documents (tables) we've created. You can update the tables directly from this GUI.

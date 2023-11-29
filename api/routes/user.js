@@ -1,7 +1,7 @@
 const dotenv = require('dotenv')
 const express = require('express')
 const router = express.Router()
-const { User } = require('../db/models')
+const { User, AppLog } = require('../db/models')
 const jwt = require('jsonwebtoken')
 dotenv.config()
 const { JWT_SECRET } = process.env
@@ -22,9 +22,24 @@ router.post('/login', async (req, res, next) => {
         if (!user) return res.status(401).json({ message: 'Email not found' })
 
         const compareRes = await user.comparePassword(password)
-        if (!compareRes) return res.status(401).send('Invalid credentials')
+        if (!compareRes) {
+            await AppLog.create({
+                username: 'unknown',
+                email: email,
+                details: `Login attempt failed`,
+                module: 'User'
+            })
+            return res.status(401).send('Invalid credentials')
+        }
 
         const token = jwt.sign({ sub: user._id }, JWT_SECRET, { expiresIn: '30d' })
+
+        await AppLog.create({
+            username: user.username,
+            email: user.email,
+            details: `New Login`,
+            module: 'User'
+        })
 
         res.status(200).json({ ...user._doc, password: null, token })
     } catch (err) {
@@ -65,6 +80,13 @@ router.post('/create', async (req, res, next) => {
         const newUser = await User.create(req.body)
         if (!newUser) return res.status(400).send('Bad request')
 
+        await AppLog.create({
+            username: newUser.username,
+            email: email,
+            details: `User created`,
+            module: 'User'
+        })
+
         res.status(201).send(`User created successfully`)
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -94,6 +116,13 @@ router.post('/update', verifyToken, async (req, res, next) => {
 
         const token = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
 
+        await AppLog.create({
+            username: newUser.username,
+            email: newUser.email,
+            details: `User updated`,
+            module: 'User'
+        })
+
         res.status(200).json({ ...newUser._doc, token })
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -108,6 +137,13 @@ router.post('/remove', verifyToken, async (req, res, next) => {
 
         const user = await User.findOne({ email }).exec()
         if (!user) return res.status(401).send('User not found')
+
+        await AppLog.create({
+            username: user.username,
+            email: email,
+            details: `User removed`,
+            module: 'User'
+        })
 
         const removed = await User.deleteOne({ email })
         if (!removed) return res.status(404).send('Error deleting user')
