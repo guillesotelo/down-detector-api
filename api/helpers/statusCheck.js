@@ -8,7 +8,7 @@ const checkApiStatus = async (system) => {
         const timeoutId = setTimeout(() => controller.abort(), timeout || 10000)
         const response = await fetch(url, { signal: controller.signal })
         clearTimeout(timeoutId)
-        
+
         if (response.status === 200) {
             return {
                 status: true,
@@ -63,12 +63,14 @@ const checkAllSystems = async () => {
             if (!updated) console.error(`Unable to update system status: ${systems[index].name}`)
         })
         console.log(`[${new Date().toLocaleString()}] System status updated: ${updatedCount}`)
-        await AppLog.create({
-            username: 'App',
-            email: 'down@company.com',
-            details: `Checked all systems. ${updatedCount ? `Updated: ${updatedCount}.` : 'No updates.'}`,
-            module: 'API'
-        })
+        if (updatedCount) {
+            await AppLog.create({
+                username: 'App',
+                email: 'down@company.com',
+                details: `Checked all systems. Updated: ${updatedCount}.`,
+                module: 'API'
+            })
+        }
     }
 }
 

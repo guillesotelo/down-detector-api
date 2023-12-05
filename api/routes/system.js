@@ -119,14 +119,14 @@ router.post('/update', verifyToken, async (req, res, next) => {
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.body
-        const system = await System.findById(_id)
+        const _system = await System.findById(_id)
 
         await System.remove({ _id })
 
         await AppLog.create({
-            username: system.createdBy || '',
+            username: _system.createdBy || '',
             email: 'down@company.com',
-            details: `System removed: ${system.name} - ${system.url}`,
+            details: `System removed: ${_system.name} - ${_system.url}`,
             module: 'System'
         })
 

@@ -24,7 +24,7 @@ router.post('/login', async (req, res, next) => {
         const compareRes = await user.comparePassword(password)
         if (!compareRes) {
             await AppLog.create({
-                username: 'unknown',
+                username: email ? email.split('@')[0] : 'unknown',
                 email: email,
                 details: `Login attempt failed`,
                 module: 'User'
@@ -70,7 +70,7 @@ router.post('/verify', async (req, res, next) => {
 
 
 //Create new user / register
-router.post('/create', async (req, res, next) => {
+router.post('/create', verifyToken, async (req, res, next) => {
     try {
         const { email } = req.body
 
@@ -87,7 +87,7 @@ router.post('/create', async (req, res, next) => {
             module: 'User'
         })
 
-        res.status(201).send(`User created successfully`)
+        res.status(201).json(newUser)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')

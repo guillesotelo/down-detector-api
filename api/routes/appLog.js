@@ -4,9 +4,9 @@ const { verifyToken } = require('../helpers')
 const router = express.Router()
 
 //Get all appLogs
-router.get('/getAll', async (req, res, next) => {
+router.get('/getAll', verifyToken, async (req, res, next) => {
     try {
-        const appLogs = await AppLog.find({ active: true }).sort({ createdAt: -1 })
+        const appLogs = await AppLog.find().sort({ createdAt: -1 })
         if (!appLogs) return res.status(404).send('No App Logs found')
 
         res.status(200).json(appLogs)
@@ -17,7 +17,7 @@ router.get('/getAll', async (req, res, next) => {
 })
 
 //Get AppLog by ID
-router.get('/getById', async (req, res, next) => {
+router.get('/getById', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.query
         const appLog = await AppLog.findById(_id)

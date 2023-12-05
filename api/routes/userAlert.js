@@ -34,15 +34,16 @@ router.get('/getById', async (req, res, next) => {
 })
 
 //Create new UserAlert
-router.post('/create', verifyToken, async (req, res, next) => {
+router.post('/create', async (req, res, next) => {
     try {
+        const { createdBy, url, systemId } = req.body
         const newUserAlert = await UserAlert.create(req.body)
         if (!newUserAlert) return res.status(400).json('Error creating User Alert')
 
         await AppLog.create({
-            username: newUserAlert.createdBy || '',
+            username: createdBy || '',
             email: 'down@company.com',
-            details: `Alert created: ${newUserAlert.url} - System: ${newUserAlert.systemId}`,
+            details: `Alert created: ${url} - System: ${systemId}`,
             module: 'User Alert'
         })
 
