@@ -39,8 +39,8 @@ connection.on("error", console.error.bind("Connection error: ", console))
 
 connection.once("open", () => {
   app.listen(PORT, () => console.log(`Server listening on Port: ${PORT}...`))
+  runSystemCheckLoop(60000)
 })
 
-runSystemCheckLoop(60000)
 
 module.exports = app
