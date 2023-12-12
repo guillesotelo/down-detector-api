@@ -16,6 +16,9 @@ const userAlertSchema = new mongoose.Schema({
     userAlert: {
         type: Boolean,
         default: true
+    },
+    createdBy: {
+        type: String
     }
 }, { timestamps: true })
 

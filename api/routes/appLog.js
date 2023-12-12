@@ -64,7 +64,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.body
 
-        await AppLog.remove({ _id })
+        await AppLog.deleteOne({ _id })
 
         res.status(200).json(`App Log ${_id} deleted`)
     } catch (err) {

@@ -66,7 +66,7 @@ const checkAllSystems = async () => {
         if (updatedCount) {
             await AppLog.create({
                 username: 'App',
-                email: 'down@volvocars.com',
+                email: 'hpdevp@volvocars.com',
                 details: `Checked all systems. Updated: ${updatedCount}.`,
                 module: 'API'
             })
