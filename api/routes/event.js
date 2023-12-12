@@ -33,12 +33,13 @@ router.get('/getById', async (req, res, next) => {
 //Create new Event
 router.post('/create', verifyToken, async (req, res, next) => {
     try {
+        const { user } = req.body
         const newEvent = await Event.create(req.body)
         if (!newEvent) return res.status(400).json('Error creating event')
 
         await AppLog.create({
-            username: newEvent.updatedBy || '',
-            email: '',
+            username: user.username || '',
+            email: user.email || '',
             details: `Event created: ${newEvent.url} - ${new Date(newEvent.start).toLocaleString()} to ${new Date(newEvent.end).toLocaleString()}`,
             module: 'Event'
         })
@@ -53,15 +54,15 @@ router.post('/create', verifyToken, async (req, res, next) => {
 //Update Event data
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
-        const { _id } = req.body
+        const { _id, user } = req.body
         let eventData = { ...req.body }
 
         const updated = await Event.findByIdAndUpdate(_id, eventData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(404).send('Error updating event')
 
         await AppLog.create({
-            username: updated.updatedBy || '',
-            email: '',
+            username: user.username || '',
+            email: user.email || '',
             details: `Event updated: ${updated.url} - ${new Date(updated.start).toLocaleString()} to ${new Date(updated.end).toLocaleString()}`,
             module: 'Event'
         })
@@ -76,13 +77,13 @@ router.post('/update', verifyToken, async (req, res, next) => {
 //Remove Event
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
-        const { _id } = req.body
+        const { _id, user } = req.body
         const event = await Event.findById(_id)
-        await Event.remove({ _id })
+        await Event.deleteOne({ _id })
 
         await AppLog.create({
-            username: event.updatedBy || '',
-            email: '',
+            username: user.username || '',
+            email: user.email || '',
             details: `Event removed: ${event.url} - ${new Date(event.start).toLocaleString()} to ${new Date(event.end).toLocaleString()}`,
             module: 'Event'
         })

@@ -36,13 +36,13 @@ router.get('/getById', async (req, res, next) => {
 //Create new UserAlert
 router.post('/create', async (req, res, next) => {
     try {
-        const { createdBy, url, systemId } = req.body
+        const { createdBy, url, systemId, user } = req.body
         const newUserAlert = await UserAlert.create(req.body)
         if (!newUserAlert) return res.status(400).json('Error creating User Alert')
 
         await AppLog.create({
-            username: createdBy || '',
-            email: 'down@company.com',
+            username: user.username || 'anonymous',
+            email: user.username || 'anonymous',
             details: `Alert created: ${url} - System: ${systemId}`,
             module: 'User Alert'
         })
@@ -57,15 +57,15 @@ router.post('/create', async (req, res, next) => {
 //Update UserAlert data
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
-        const { _id } = req.body
+        const { _id, user } = req.body
         let userAlertData = { ...req.body }
 
         const updated = await UserAlert.findByIdAndUpdate(_id, userAlertData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(404).send('Error updating User Alert')
 
         await AppLog.create({
-            username: updated.createdBy || '',
-            email: 'down@company.com',
+            username: user.username || 'anonymous',
+            email: user.username || 'anonymous',
             details: `Alert updated: ${updated.url} - System: ${updated.systemId}`,
             module: 'User Alert'
         })
@@ -80,14 +80,14 @@ router.post('/update', verifyToken, async (req, res, next) => {
 //Remove UserAlert
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
-        const { _id } = req.body
+        const { _id, user } = req.body
         const alert = await UserAlert.findById(_id)
 
-        await UserAlert.remove({ _id })
-
+        await UserAlert.deleteOne({ _id })
+        
         await AppLog.create({
-            username: alert.createdBy || '',
-            email: 'down@company.com',
+            username: user.username || '',
+            email: user.username || '',
             details: `Alert removed: ${alert.url} - System: ${alert.systemId}`,
             module: 'User Alert'
         })

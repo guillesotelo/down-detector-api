@@ -34,13 +34,13 @@ router.get('/getById', async (req, res, next) => {
 //Create new system
 router.post('/create', verifyToken, async (req, res, next) => {
     try {
-        const { downtimeArray } = req.body
+        const { downtimeArray, user } = req.body
         const newSystem = await System.create(req.body)
         if (!newSystem) return res.status(400).json('Error creating system')
 
         await AppLog.create({
-            username: newSystem.createdBy || '',
-            email: 'down@company.com',
+            username: user.username || '',
+            email: user.email || '',
             details: `System created: ${newSystem.name} - ${newSystem.url}`,
             module: 'System'
         })
@@ -69,15 +69,15 @@ router.post('/create', verifyToken, async (req, res, next) => {
 //Update system data
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
-        const { _id, downtimeArray } = req.body
+        const { _id, downtimeArray, user } = req.body
         let systemData = { ...req.body }
 
         const updated = await System.findByIdAndUpdate(_id, systemData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(404).send('Error updating system')
 
         await AppLog.create({
-            username: updated.createdBy || '',
-            email: 'down@company.com',
+            username: user.username || '',
+            email: user.email || '',
             details: `System updated: ${updated.name} - ${updated.url}`,
             module: 'System'
         })
@@ -118,15 +118,17 @@ router.post('/update', verifyToken, async (req, res, next) => {
 //Remove system
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
-        const { _id } = req.body
-        const _system = await System.findById(_id)
+        const { _id, user, name, url } = req.body
 
-        await System.remove({ _id })
+        const _system = await System.findById(_id)
+        if (!_system) return res.status(404).send('Error deleting system')
+
+        await System.deleteOne({ _id })
 
         await AppLog.create({
-            username: _system.createdBy || '',
-            email: 'down@company.com',
-            details: `System removed: ${_system.name} - ${_system.url}`,
+            username: user.username || '',
+            email: user.email || '',
+            details: `System removed: ${name} - ${url}`,
             module: 'System'
         })
 

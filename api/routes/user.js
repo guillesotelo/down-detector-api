@@ -72,7 +72,7 @@ router.post('/verify', async (req, res, next) => {
 //Create new user / register
 router.post('/create', verifyToken, async (req, res, next) => {
     try {
-        const { email } = req.body
+        const { email, user } = req.body
 
         const emailRegistered = await User.findOne({ email }).exec()
         if (emailRegistered) return res.status(401).send('Email already in use')
@@ -81,9 +81,9 @@ router.post('/create', verifyToken, async (req, res, next) => {
         if (!newUser) return res.status(400).send('Bad request')
 
         await AppLog.create({
-            username: newUser.username,
-            email: email,
-            details: `User created`,
+            username: user.username || '',
+            email: user.email || '',
+            details: `User created: ${newUser.username || ''}`,
             module: 'User'
         })
 
@@ -110,16 +110,16 @@ router.get('/getAll', verifyToken, async (req, res, next) => {
 //Update User Data
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
-        const { _id, newData } = req.body
+        const { _id, newData, user } = req.body
         const newUser = await User.findByIdAndUpdate(_id, newData, { returnDocument: "after", useFindAndModify: false }).select('-password')
         if (!newUser) return res.status(500).send('Error updating User')
 
         const token = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
 
         await AppLog.create({
-            username: newUser.username,
-            email: newUser.email,
-            details: `User updated`,
+            username: user.username || '',
+            email: user.email || '',
+            details: `User updated: ${newUser.username || ''}`,
             module: 'User'
         })
 
@@ -133,15 +133,15 @@ router.post('/update', verifyToken, async (req, res, next) => {
 //Remove User
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
-        const { email } = req.body
+        const { email, user } = req.body
 
-        const user = await User.findOne({ email }).exec()
-        if (!user) return res.status(401).send('User not found')
+        const exists = await User.findOne({ email }).exec()
+        if (!exists) return res.status(401).send('User not found')
 
         await AppLog.create({
-            username: user.username,
-            email: email,
-            details: `User removed`,
+            username: user.username || '',
+            email: user.email || '',
+            details: `User removed: ${exists.username || ''}`,
             module: 'User'
         })
 

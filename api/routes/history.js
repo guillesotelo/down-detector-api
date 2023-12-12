@@ -55,7 +55,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
 
         await AppLog.create({
             username: 'App',
-            email: 'down@company.com',
+            email: 'hpdevp@company.com',
             details: `History created: ${newHistory.url} - Status: ${newHistory.status ? 'UP' : 'DOWN'} - System: ${updated.systemId}`,
             module: 'History'
         })
@@ -70,7 +70,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
 //Update History data
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
-        const { _id } = req.body
+        const { _id, user } = req.body
         let historyData = { ...req.body }
 
         const updated = await History.findByIdAndUpdate(_id, historyData, { returnDocument: "after", useFindAndModify: false })
@@ -78,7 +78,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
 
         await AppLog.create({
             username: 'App',
-            email: 'down@company.com',
+            email: 'hpdevp@company.com',
             details: `History updated: ${updated.url} - Status: ${updated.status ? 'UP' : 'DOWN'} - System: ${updated.systemId}`,
             module: 'History'
         })
@@ -95,11 +95,11 @@ router.post('/remove', verifyToken, async (req, res, next) => {
     try {
         const { _id } = req.body
         const history = await History.findById(_id)
-        await History.remove({ _id })
+        await History.deleteOne({ _id })
 
         await AppLog.create({
             username: 'App',
-            email: 'down@company.com',
+            email: 'hpdevp@company.com',
             details: `History removed: ${history.url} - System: ${updated.systemId}`,
             module: 'History'
         })
