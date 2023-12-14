@@ -20,6 +20,12 @@ const systemSchema = new mongoose.Schema({
     interval: {
         type: Number
     },
+    owner: {
+        type: String
+    },
+    ownerId: {
+        type: String
+    },
     createdBy: {
         type: String
     },

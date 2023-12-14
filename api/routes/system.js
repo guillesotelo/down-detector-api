@@ -7,7 +7,21 @@ const router = express.Router()
 //Get all systems
 router.get('/getAll', async (req, res, next) => {
     try {
-        const systems = await System.find({ active: true }).sort({ createdAt: -1 })
+        const systems = await System.find({ active: true }).select('-ownerId').sort({ createdAt: -1 })
+        if (!systems) return res.status(404).send('No systems found')
+
+        res.status(200).json(systems)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
+//Get system by ID
+router.get('/getAllByOwnerId', async (req, res, next) => {
+    try {
+        const { _id } = req.query
+        const systems = await System.find({ ownerId: _id }).sort({ createdAt: -1 })
         if (!systems) return res.status(404).send('No systems found')
 
         res.status(200).json(systems)
@@ -89,9 +103,9 @@ router.post('/update', verifyToken, async (req, res, next) => {
                     await Event.create({ ...downtime, systemId: updated._id })
             })
 
-            const savedSystems = await Promise.all(promises)
-            savedSystems.forEach((updated, index) => {
-                if (!updated) console.error(`Unable to save system: ${JSON.stringify(downtimeArray[index])}`)
+            const savedEvents = await Promise.all(promises)
+            savedEvents.forEach((updated, index) => {
+                if (!updated) console.error(`Unable to save event: ${JSON.stringify(downtimeArray[index])}`)
             })
         }
 
