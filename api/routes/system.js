@@ -1,5 +1,5 @@
 const express = require('express')
-const { System, Event, History, AppLog } = require('../db/models')
+const { System, Event, History, AppLog, User } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const { checkApiStatus } = require('../helpers/statusCheck')
 const router = express.Router()
@@ -7,7 +7,11 @@ const router = express.Router()
 //Get all systems
 router.get('/getAll', async (req, res, next) => {
     try {
-        const systems = await System.find({ active: true }).select('-ownerId').sort({ createdAt: -1 })
+        const { _id } = req.query
+        const user = await User.findById(_id)
+
+        const systems = user && user.isSuper ? await System.find({ active: true }).sort({ createdAt: -1 })
+        : await System.find({ active: true }).select('-owner -ownerId').sort({ createdAt: -1 })
         if (!systems) return res.status(404).send('No systems found')
 
         res.status(200).json(systems)

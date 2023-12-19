@@ -1,7 +1,7 @@
 const dotenv = require('dotenv')
 const express = require('express')
 const router = express.Router()
-const { User, AppLog } = require('../db/models')
+const { User, AppLog, System } = require('../db/models')
 const jwt = require('jsonwebtoken')
 dotenv.config()
 const { JWT_SECRET } = process.env
@@ -59,7 +59,11 @@ router.post('/verify', async (req, res, next) => {
                 if (error) return res.status(403)
 
                 const userData = await User.findOne({ email }).exec()
-                res.status(200).json({ ...userData._doc, token: bearerToken })
+                res.status(200).json({
+                    ...userData._doc,
+                    token: bearerToken,
+                    password: null
+                })
             })
         } else res.status(403)
     } catch (err) {
@@ -68,17 +72,24 @@ router.post('/verify', async (req, res, next) => {
     }
 })
 
-
 //Create new user / register
 router.post('/create', verifyToken, async (req, res, next) => {
     try {
-        const { email, user } = req.body
+        const { email, user, ownedSystems } = req.body
 
         const emailRegistered = await User.findOne({ email }).exec()
         if (emailRegistered) return res.status(401).send('Email already in use')
 
         const newUser = await User.create(req.body)
         if (!newUser) return res.status(400).send('Bad request')
+
+        if (ownedSystems && Array.isArray(ownedSystems)) {
+            await Promise.all(ownedSystems.map(async system => {
+                return await System.findByIdAndUpdate(system._id,
+                    { owner: JSON.stringify(newData), ownerId: newUser._id },
+                    { returnDocument: "after", useFindAndModify: false })
+            }))
+        }
 
         await AppLog.create({
             username: user.username || '',
@@ -113,6 +124,22 @@ router.post('/update', verifyToken, async (req, res, next) => {
         const { _id, newData, user } = req.body
         const newUser = await User.findByIdAndUpdate(_id, newData, { returnDocument: "after", useFindAndModify: false }).select('-password')
         if (!newUser) return res.status(500).send('Error updating User')
+
+        const { ownedSystems } = newData
+        if (ownedSystems && Array.isArray(ownedSystems)) {
+            const previuslyOwnedSystems = await System.find({ ownerId: newUser._id })
+            await Promise.all(previuslyOwnedSystems.map(async system => {
+                return await System.findByIdAndUpdate(system._id,
+                    { owner: null, ownerId: null },
+                    { returnDocument: "after", useFindAndModify: false })
+            }))
+
+            await Promise.all(ownedSystems.map(async system => {
+                return await System.findByIdAndUpdate(system._id,
+                    { owner: JSON.stringify(newData), ownerId: newUser._id },
+                    { returnDocument: "after", useFindAndModify: false })
+            }))
+        }
 
         const token = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
 
