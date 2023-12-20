@@ -1,7 +1,7 @@
-const { System, History, AppLog } = require("../db/models")
+const { System, History, AppLog, UserAlert } = require("../db/models")
 let intervalId = null
 
-const checkApiStatus = async (system) => {
+const checkSystemStatus = async (system) => {
     try {
         const { url, timeout } = system
         const controller = new AbortController()
@@ -17,13 +17,13 @@ const checkApiStatus = async (system) => {
         } else {
             return {
                 status: false,
-                message: `Error while fetching API: ${error.message}`
+                message: `Error fetching system: ${error.message}`
             }
         }
     } catch (error) {
         return {
             status: false,
-            message: `Error while fetching API: ${error.message}`
+            message: `Error fetching system: ${error.message}`
         }
     }
 }
@@ -33,27 +33,48 @@ const checkAllSystems = async () => {
     if (systems && systems.length) {
         let updatedCount = 0
 
-        // ADD REPORT THREESHOLD LOGIC
-
         const promises = systems.map(async (system) => {
-            const { status } = await checkApiStatus(system)
+            const { status } = await checkSystemStatus(system)
+            let systemStatus = status
             const exists = await History.find({ systemId: system._id }).sort({ createdAt: -1 })
-            await System.findByIdAndUpdate(system._id, { lastCheck: new Date(), lastCheckStatus: status }, { returnDocument: "after", useFindAndModify: false })
+            
+            // Threshold logic
+            let alertStatus = null
+            const alerts = await UserAlert.find({ systemId: system._id }).sort({ createdAt: -1 })
+            if(alerts && Array.isArray(alerts) && alerts.length >= system.alertThreshold || 3){
+                let count = 0
+                alerts.forEach(alert => {
+                    const now = new Date().getTime()
+                    const alertDate = new Date(alert.createdAt).getTime()
+                    if(now - alertDate < (1000 * 60 * 60) * system.alertsExpiration || 2) {
+                        count++
+                    }
+                })
+                if(count >= 3) systemStatus = false
+            }
+
+            await System.findByIdAndUpdate(system._id, 
+                { 
+                    lastCheck: new Date(), 
+                    lastCheckStatus: systemStatus
+                }, 
+                { returnDocument: "after", useFindAndModify: false })
+            
 
             if (exists && exists.length && exists[0]._id) {
-                if (status !== exists[0].status) {
+                if (systemStatus !== exists[0].status) {
                     updatedCount++
                     return await History.create({
                         systemId: system._id,
                         url: system.url,
-                        status,
+                        status: systemStatus,
                         description: system.description
                     })
                 } else return exists[0]
             } else return await History.create({
                 systemId: system._id,
                 url: system.url,
-                status,
+                status: systemStatus,
                 description: system.description
             })
         })
@@ -76,6 +97,7 @@ const checkAllSystems = async () => {
 
 const runSystemCheckLoop = async (interval) => {
     try {
+        clearInterval(intervalId)
         await checkAllSystems()
         intervalId = setInterval(checkAllSystems, interval || 600000)
     } catch (error) {
@@ -84,7 +106,7 @@ const runSystemCheckLoop = async (interval) => {
 }
 
 module.exports = {
-    checkApiStatus,
+    checkSystemStatus,
     checkAllSystems,
     runSystemCheckLoop
 }
