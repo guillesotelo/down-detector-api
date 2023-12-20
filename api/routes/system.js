@@ -1,7 +1,7 @@
 const express = require('express')
 const { System, Event, History, AppLog, User } = require('../db/models')
 const { verifyToken } = require('../helpers')
-const { checkApiStatus } = require('../helpers/statusCheck')
+const { checkSystemStatus } = require('../helpers/statusCheck')
 const router = express.Router()
 
 //Get all systems
@@ -74,7 +74,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
             })
         }
 
-        const { status } = await checkApiStatus(newSystem)
+        const { status } = await checkSystemStatus(newSystem)
         await History.create({ ...newSystem._doc, systemId: newSystem._id, status })
 
         res.status(200).json(newSystem)
@@ -113,7 +113,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
             })
         }
 
-        const { status } = await checkApiStatus(updated)
+        const { status } = await checkSystemStatus(updated)
         const exists = await History.find({ systemId: updated._id }).sort({ createdAt: -1 })
         if (exists && exists.length && exists[0]._id) {
             if (status !== exists[0].status) {

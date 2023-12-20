@@ -20,6 +20,14 @@ const systemSchema = new mongoose.Schema({
     interval: {
         type: Number
     },
+    alertThreshold: {
+        type: Number,
+        default: 3
+    },
+    alertsExpiration: {
+        type: Number,
+        default: 2
+    },
     owner: {
         type: String
     },
