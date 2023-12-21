@@ -37,29 +37,34 @@ const checkAllSystems = async () => {
             const { status } = await checkSystemStatus(system)
             let systemStatus = status
             const exists = await History.find({ systemId: system._id }).sort({ createdAt: -1 })
-            
+
             // Threshold logic
             let alertStatus = null
             const alerts = await UserAlert.find({ systemId: system._id }).sort({ createdAt: -1 })
-            if(alerts && Array.isArray(alerts) && alerts.length >= system.alertThreshold || 3){
+            if (alerts && Array.isArray(alerts) && alerts.length >= system.alertThreshold || 3) {
                 let count = 0
-                alerts.forEach(alert => {
+                alerts.forEach((alert, i) => {
                     const now = new Date().getTime()
                     const alertDate = new Date(alert.createdAt).getTime()
-                    if(now - alertDate < (1000 * 60 * 60) * system.alertsExpiration || 2) {
+
+                    // Check if last alert is within the expiration date
+                    if (i === 0 && now - alertDate < (3600000) * (system.alertsExpiration || 2)) {
+                        count++
+                        // Also check if time between alerts is less than 2 hours
+                    } else if (i !== 0 && count > 0 && new Date(alerts[i - 1].createdAt).getTime() - alertDate < (3600000 * 2)) {
                         count++
                     }
                 })
-                if(count >= 3) systemStatus = false
+                if (count >= 3) systemStatus = false
             }
 
-            await System.findByIdAndUpdate(system._id, 
-                { 
-                    lastCheck: new Date(), 
+            await System.findByIdAndUpdate(system._id,
+                {
+                    lastCheck: new Date(),
                     lastCheckStatus: systemStatus
-                }, 
+                },
                 { returnDocument: "after", useFindAndModify: false })
-            
+
 
             if (exists && exists.length && exists[0]._id) {
                 if (systemStatus !== exists[0].status) {
