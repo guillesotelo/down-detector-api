@@ -50,6 +50,10 @@ const systemSchema = new mongoose.Schema({
     active: {
         type: Boolean,
         default: true
+    },
+    reportedlyDown: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true })
 

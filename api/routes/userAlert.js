@@ -36,13 +36,13 @@ router.get('/getById', async (req, res, next) => {
 //Create new UserAlert
 router.post('/create', async (req, res, next) => {
     try {
-        const { createdBy, url, systemId, user } = req.body
+        const { createdBy, url, systemId, user } = req.body        
         const newUserAlert = await UserAlert.create(req.body)
         if (!newUserAlert) return res.status(400).json('Error creating User Alert')
 
         await AppLog.create({
-            username: user.username || 'anonymous',
-            email: user.username || 'anonymous',
+            username: user.username || createdBy,
+            email: user.username || createdBy,
             details: `Alert created: ${url} - System: ${systemId}`,
             module: 'User Alert'
         })
@@ -84,7 +84,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         const alert = await UserAlert.findById(_id)
 
         await UserAlert.deleteOne({ _id })
-        
+
         await AppLog.create({
             username: user.username || '',
             email: user.username || '',
