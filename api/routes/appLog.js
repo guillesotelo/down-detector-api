@@ -7,7 +7,7 @@ const router = express.Router()
 router.get('/getAll', verifyToken, async (req, res, next) => {
     try {
         const appLogs = await AppLog.find().sort({ createdAt: -1 })
-        if (!appLogs) return res.status(404).send('No App Logs found')
+        if (!appLogs || !appLogs.length) return res.status(404).send('No App Logs found')
 
         res.status(200).json(appLogs)
     } catch (err) {

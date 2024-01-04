@@ -10,7 +10,7 @@ router.get('/getAll', async (req, res, next) => {
         const userAlerts = systemId ?
             await UserAlert.find({ systemId }).sort({ createdAt: -1 }) :
             await UserAlert.find().sort({ createdAt: -1 })
-        if (!userAlerts) return res.status(404).send('No User Alerts found')
+        if (!userAlerts || !userAlerts.length) return res.status(404).send('No User Alerts found')
 
         res.status(200).json(userAlerts)
     } catch (err) {

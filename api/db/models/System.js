@@ -28,12 +28,10 @@ const systemSchema = new mongoose.Schema({
         type: Number,
         default: 2
     },
-    owner: {
-        type: String
-    },
-    ownerId: {
-        type: String
-    },
+    owners: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     createdBy: {
         type: String
     },

@@ -11,5 +11,5 @@ module.exports = {
   Event,
   History,
   AppLog,
-  UserAlert
+  UserAlert,
 };
