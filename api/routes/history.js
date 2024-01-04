@@ -10,7 +10,7 @@ router.get('/getAll', async (req, res, next) => {
         const histories = systemId ?
             await History.find({ systemId }).sort({ createdAt: -1 }) :
             await History.find().sort({ createdAt: -1 })
-        if (!histories) return res.status(404).send('No histories found')
+        if (!histories || !histories.length) return res.status(404).send('No histories found')
 
         res.status(200).json(histories)
     } catch (err) {
@@ -38,7 +38,7 @@ router.get('/getBySystemId', async (req, res, next) => {
     try {
         const { _id } = req.query
         const history = await History.find({ systemId: _id }).sort({ createdAt: -1 })
-        if (!history) return res.status(404).send('History not found for given system')
+        if (!history || !history.length) return res.status(404).send('History not found for given system')
 
         res.status(200).json(history)
     } catch (err) {

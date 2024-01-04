@@ -17,7 +17,11 @@ const userSchema = new mongoose.Schema({
     isSuper: {
         type: Boolean,
         default: false
-    }
+    },
+    systems: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'System'
+    }]
 }, { timestamps: true })
 
 userSchema.pre('save', function (next) {

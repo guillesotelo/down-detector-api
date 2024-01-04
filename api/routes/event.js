@@ -7,7 +7,7 @@ const router = express.Router()
 router.get('/getAll', async (req, res, next) => {
     try {
         const events = await Event.find().sort({ createdAt: -1 })
-        if (!events) return res.status(404).send('No events found')
+        if (!events || !events.length) return res.status(404).send('No events found')
 
         res.status(200).json(events)
     } catch (err) {
