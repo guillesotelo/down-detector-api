@@ -100,9 +100,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         const { _id, downtimeArray, user, selectedOwners } = req.body
         let systemData = { ...req.body }
 
-        if (selectedOwners && Array.isArray(selectedOwners) && selectedOwners.length) {
-            systemData.owners = selectedOwners.map(user => user._id)
-        }
+        systemData.owners = selectedOwners.map(user => user._id)
 
         const updatedSystem = await System.findByIdAndUpdate(
             _id,
@@ -112,16 +110,14 @@ router.post('/update', verifyToken, async (req, res, next) => {
 
         if (!updatedSystem) return res.status(404).send('Error updating system')
 
-        if (systemData.owners && systemData.owners.length) {
-            await User.updateMany(
-                { _id: { $in: systemData.owners } },
-                { $addToSet: { systems: _id } }
-            )
-            await User.updateMany(
-                { systems: _id, _id: { $nin: systemData.owners } },
-                { $pull: { systems: _id } }
-            )
-        }
+        await User.updateMany(
+            { _id: { $in: systemData.owners } },
+            { $addToSet: { systems: _id } }
+        )
+        await User.updateMany(
+            { systems: _id, _id: { $nin: systemData.owners } },
+            { $pull: { systems: _id } }
+        )
 
         if (downtimeArray && downtimeArray.length) {
             const savedEvents = await Promise.all(downtimeArray.map(async (downtime) =>
@@ -171,12 +167,12 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         const _system = await System.findById(_id)
         if (!_system) return res.status(404).send('Error deleting system')
 
+        const removed = await System.deleteOne({ _id })
+
         await User.updateMany(
             { systems: _id },
             { $pull: { systems: _id } }
         )
-
-        const removed = await System.deleteOne({ _id })
 
         await AppLog.create({
             username: user.username || '',

@@ -29,8 +29,18 @@ const verifyToken = (req, res, next) => {
     } else res.status(403)
 }
 
+const isJson = str => {
+    try {
+        JSON.stringify(str)
+    } catch (e) {
+        return false
+    }
+    return true
+}
+
 module.exports = {
     encrypt,
     decrypt,
-    verifyToken
+    verifyToken,
+    isJson
 }

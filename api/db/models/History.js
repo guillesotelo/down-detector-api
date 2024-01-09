@@ -13,6 +13,9 @@ const historySchema = new mongoose.Schema({
     description: {
         type: String
     },
+    raw: {
+        type: String
+    },
 }, { timestamps: true })
 
 const History = mongoose.model('History', historySchema)
