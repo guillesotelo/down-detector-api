@@ -4,6 +4,7 @@ const Event = require("./Event");
 const History = require("./History");
 const AppLog = require("./AppLog");
 const UserAlert = require("./UserAlert");
+const App = require("./App");
 
 module.exports = {
   User,
@@ -12,4 +13,5 @@ module.exports = {
   History,
   AppLog,
   UserAlert,
+  App,
 };

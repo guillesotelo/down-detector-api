@@ -52,7 +52,10 @@ const systemSchema = new mongoose.Schema({
     reportedlyDown: {
         type: Boolean,
         default: false
-    }
+    },
+    raw: {
+        type: String
+    },
 }, { timestamps: true })
 
 const System = mongoose.model('System', systemSchema)

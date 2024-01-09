@@ -125,9 +125,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         const { _id, newData, user } = req.body
         const { ownedSystems } = newData
 
-        if (ownedSystems && Array.isArray(ownedSystems) && ownedSystems.length) {
-            newData.systems = ownedSystems.map(system => system._id)
-        }
+        newData.systems = ownedSystems.map(system => system._id)
 
         const newUser = await User.findByIdAndUpdate(
             _id,
@@ -137,16 +135,14 @@ router.post('/update', verifyToken, async (req, res, next) => {
 
         if (!newUser) return res.status(500).send('Error updating User')
 
-        if (newData.systems && newData.systems.length) {
-            await System.updateMany(
-                { _id: { $in: newData.systems } },
-                { $addToSet: { owners: _id } }
-            )
-            await System.updateMany(
-                { owners: _id, _id: { $nin: newData.systems } },
-                { $pull: { owners: _id } }
-            )
-        }
+        await System.updateMany(
+            { _id: { $in: newData.systems } },
+            { $addToSet: { owners: _id } }
+        )
+        await System.updateMany(
+            { owners: _id, _id: { $nin: newData.systems } },
+            { $pull: { owners: _id } }
+        )
 
         const token = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
         newUser.token = token
@@ -173,12 +169,12 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         const exists = await User.findOne({ email }).exec()
         if (!exists) return res.status(401).send('User not found')
 
+        const removed = await User.deleteOne({ email })
+
         await System.updateMany(
             { owners: exists._id },
             { $pull: { owners: exists._id } }
         )
-
-        const removed = await User.deleteOne({ email })
 
         await AppLog.create({
             username: user.username || '',
