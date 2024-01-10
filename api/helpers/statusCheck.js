@@ -201,7 +201,7 @@ const checkAllSystems = async () => {
                             count++
                         }
                         // Also check if time between alerts is less than 2 hours
-                    } else if (i !== 0 && count > 0 && new Date(alerts[i - 1].createdAt).getTime() - alertDate < (3600000 * 2)) {
+                    } else if (i !== 0 && count === i && new Date(alerts[i - 1].createdAt).getTime() - alertDate < (3600000 * 2)) {
                         if (!users.includes(alert.createdBy)) {
                             users.push(alert.createdBy)
                             count++
@@ -209,6 +209,8 @@ const checkAllSystems = async () => {
                     }
                 })
                 if (count >= 3) {
+
+                    console.log(`------ ${system.name} reported DOWN with [${count}] reports ------`)
                     systemStatus = false
                     reportedlyDown = true
                 }
