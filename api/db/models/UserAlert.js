@@ -13,6 +13,9 @@ const userAlertSchema = new mongoose.Schema({
     description: {
         type: String
     },
+    geoLocation: {
+        type: String
+    },
     userAlert: {
         type: Boolean,
         default: true
