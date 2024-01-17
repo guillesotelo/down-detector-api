@@ -216,18 +216,20 @@ const checkAllSystems = async () => {
                 }
             }
 
-            await System.findByIdAndUpdate(system._id,
-                {
-                    lastCheck: new Date(),
-                    lastCheckStatus: systemStatus,
-                    reportedlyDown,
-                    raw
-                },
-                { returnDocument: "after", useFindAndModify: false })
+
 
             if (exists && exists.length && exists[0]._id) {
                 if (systemStatus !== exists[0].status) {
                     updatedCount++
+                    await System.findByIdAndUpdate(system._id,
+                        {
+                            lastCheck: new Date(),
+                            lastCheckStatus: systemStatus,
+                            reportedlyDown,
+                            raw
+                        },
+                        { returnDocument: "after", useFindAndModify: false })
+
                     return await History.create({
                         systemId: system._id,
                         url: system.url,
@@ -236,13 +238,24 @@ const checkAllSystems = async () => {
                         raw
                     })
                 } else return exists[0]
-            } else return await History.create({
-                systemId: system._id,
-                url: system.url,
-                status: systemStatus,
-                description: system.description,
-                raw
-            })
+            } else {
+                await System.findByIdAndUpdate(system._id,
+                    {
+                        lastCheck: new Date(),
+                        lastCheckStatus: systemStatus,
+                        reportedlyDown,
+                        raw
+                    },
+                    { returnDocument: "after", useFindAndModify: false })
+
+                return await History.create({
+                    systemId: system._id,
+                    url: system.url,
+                    status: systemStatus,
+                    description: system.description,
+                    raw
+                })
+            }
         })
 
         checkIndex = 1
