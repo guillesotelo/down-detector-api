@@ -17,7 +17,7 @@ router.post('/login', async (req, res, next) => {
         // const jwtToken = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
         // return res.status(200).json({ ...newUser._doc, password: null, token: jwtToken })
 
-        const user = await User.findOne({ email }).exec()
+        const user = await User.findOne({ email }).populate('systems').exec()
 
         if (!user) return res.status(401).json({ message: 'Email not found' })
 

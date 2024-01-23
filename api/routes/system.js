@@ -11,9 +11,9 @@ router.get('/getAll', async (req, res, next) => {
         const user = await User.findById(_id)
 
         const systems = user && user.isSuper ?
-            await System.find({ active: true }).sort({ createdAt: -1 }).populate('owners')
+            await System.find({ active: true }).sort({ createdAt: -1 }).populate({ path: 'owners', select: '-password' })
             : await System.find({ active: true }).sort({ createdAt: -1 })
-        if (!systems || !systems.length) return res.status(404).send('No systems found')
+        if (!systems || !systems.length) return res.status(200).send('No systems found')
 
         res.status(200).json(systems)
     } catch (err) {
@@ -26,8 +26,8 @@ router.get('/getAll', async (req, res, next) => {
 router.get('/getAllByOwnerId', async (req, res, next) => {
     try {
         const { _id } = req.query
-        const systems = await System.find({ 'owners.user': _id }).sort({ createdAt: -1 })
-        if (!systems || !systems.length) return res.status(404).send('No systems found')
+        const systems = await System.find({ 'owners': _id }).sort({ createdAt: -1 })
+        if (!systems || !systems.length) return res.status(200).send('No systems found')
 
         res.status(200).json(systems)
     } catch (err) {
