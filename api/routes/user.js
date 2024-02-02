@@ -19,7 +19,7 @@ router.post('/login', async (req, res, next) => {
 
         const user = await User.findOne({ email }).populate('systems').exec()
 
-        if (!user) return res.status(401).json({ message: 'Email not found' })
+        if (!user) return res.status(401).send('Unauthorized')
 
         const compareRes = await user.comparePassword(password)
         if (!compareRes) {
@@ -29,7 +29,7 @@ router.post('/login', async (req, res, next) => {
                 details: `Login attempt failed`,
                 module: 'User'
             })
-            return res.status(401).send('Invalid credentials')
+            return res.status(401).send('Unauthorized')
         }
 
         const token = jwt.sign({ sub: user._id }, JWT_SECRET, { expiresIn: '30d' })
@@ -79,13 +79,13 @@ router.post('/create', verifyToken, async (req, res, next) => {
         const systemIds = ownedSystems.map(system => system._id)
 
         const emailRegistered = await User.findOne({ email }).exec()
-        if (emailRegistered) return res.status(401).send('Email already in use')
+        if (emailRegistered) return res.status(409).send('Email already in use')
 
         const newUser = await User.create({
             ...req.body,
             systems: systemIds
         })
-        if (!newUser) return res.status(400).send('Bad request')
+        if (!newUser) return res.status(400).send('Error creating User')
 
         await System.updateMany(
             { _id: { $in: systemIds } },
@@ -110,7 +110,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
 router.get('/getAll', verifyToken, async (req, res, next) => {
     try {
         const users = await User.find().select('-password').sort({ createdAt: -1 }).populate('systems')
-        if (!users || !users.length) return res.status(404).send('No users found')
+        if (!users || !users.length) return res.status(200).send('No users found')
 
         res.status(200).json(users)
     } catch (err) {
@@ -133,7 +133,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
             { returnDocument: "after", useFindAndModify: false }
         ).select('-password').populate('systems')
 
-        if (!newUser) return res.status(500).send('Error updating User')
+        if (!newUser) return res.status(400).send('Error updating User')
 
         await System.updateMany(
             { _id: { $in: newData.systems } },
@@ -167,7 +167,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         const { email, user } = req.body
 
         const exists = await User.findOne({ email }).exec()
-        if (!exists) return res.status(401).send('User not found')
+        if (!exists) return res.status(404).send('User not found')
 
         const removed = await User.deleteOne({ email })
 
@@ -182,7 +182,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
             details: `User removed: ${exists.username || ''}`,
             module: 'User'
         })
-        if (!removed) return res.status(404).send('Error deleting user')
+        if (!removed) return res.status(400).send('Error deleting user')
 
         res.status(200).send('User removed successfully')
     } catch (err) {

@@ -178,16 +178,16 @@ const checkAllSystems = async () => {
 
         console.log('# # # # Checking systems # # # #')
         const promises = systems.map(async (system) => {
+            const { _id, name, url, description, alertThreshold, alertsExpiration } = system
             const { status, raw } = await checkSystemStatus(system)
 
             let systemStatus = status
             let reportedlyDown = false
-            const exists = await History.find({ systemId: system._id }).sort({ createdAt: -1 })
+            const exists = await History.find({ systemId: _id }).sort({ createdAt: -1 })
 
             // Threshold logic
-            let alertStatus = null
-            const alerts = await UserAlert.find({ systemId: system._id }).sort({ createdAt: -1 })
-            if (alerts && Array.isArray(alerts) && alerts.length >= system.alertThreshold || 3) {
+            const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
+            if (alerts && Array.isArray(alerts) && alerts.length >= alertThreshold || 3) {
                 let count = 0
                 const users = []
                 alerts.forEach((alert, i) => {
@@ -195,7 +195,7 @@ const checkAllSystems = async () => {
                     const alertDate = new Date(alert.createdAt).getTime()
 
                     // Check if last alert is within the expiration date
-                    if (i === 0 && now - alertDate < (3600000) * (system.alertsExpiration || 2)) {
+                    if (i === 0 && now - alertDate < (3600000) * (alertsExpiration || 2)) {
                         if (!users.includes(alert.createdBy)) {
                             users.push(alert.createdBy)
                             count++
@@ -208,9 +208,9 @@ const checkAllSystems = async () => {
                         }
                     }
                 })
-                if (count >= 3) {
+                if (count >= (alertThreshold || 3)) {
 
-                    console.log(`------ ${system.name} reported DOWN with [${count}] reports ------`)
+                    console.log(`------ ${name} reported DOWN with [${count}] reports ------`)
                     systemStatus = false
                     reportedlyDown = true
                 }
@@ -221,7 +221,7 @@ const checkAllSystems = async () => {
             if (exists && exists.length && exists[0]._id) {
                 if (systemStatus !== exists[0].status) {
                     updatedCount++
-                    await System.findByIdAndUpdate(system._id,
+                    await System.findByIdAndUpdate(_id,
                         {
                             lastCheck: new Date(),
                             lastCheckStatus: systemStatus,
@@ -231,10 +231,10 @@ const checkAllSystems = async () => {
                         { returnDocument: "after", useFindAndModify: false })
 
                     return await History.create({
-                        systemId: system._id,
-                        url: system.url,
+                        systemId: _id,
+                        url,
                         status: systemStatus,
-                        description: system.description,
+                        description,
                         raw
                     })
                 } else return exists[0]
@@ -249,10 +249,10 @@ const checkAllSystems = async () => {
                     { returnDocument: "after", useFindAndModify: false })
 
                 return await History.create({
-                    systemId: system._id,
-                    url: system.url,
+                    systemId: _id,
+                    url,
                     status: systemStatus,
-                    description: system.description,
+                    description,
                     raw
                 })
             }

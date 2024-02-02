@@ -7,7 +7,7 @@ const router = express.Router()
 router.get('/getAll', async (req, res, next) => {
     try {
         const events = await Event.find().sort({ createdAt: -1 })
-        if (!events || !events.length) return res.status(404).send('No events found')
+        if (!events || !events.length) return res.status(200).send('No events found')
 
         res.status(200).json(events)
     } catch (err) {
@@ -44,7 +44,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
             module: 'Event'
         })
 
-        res.status(200).json(newEvent)
+        res.status(201).json(newEvent)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -58,7 +58,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         let eventData = { ...req.body }
 
         const updated = await Event.findByIdAndUpdate(_id, eventData, { returnDocument: "after", useFindAndModify: false })
-        if (!updated) return res.status(404).send('Error updating event')
+        if (!updated) return res.status(400).send('Error updating event')
 
         await AppLog.create({
             username: user.username || '',

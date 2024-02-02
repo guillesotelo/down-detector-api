@@ -2,15 +2,21 @@ const express = require('express')
 const { History, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
+const moment = require('moment')
 
 //Get all histories
 router.get('/getAll', async (req, res, next) => {
     try {
         const { systemId } = req.query
-        const histories = systemId ?
-            await History.find({ systemId }).sort({ createdAt: -1 }) :
-            await History.find().sort({ createdAt: -1 })
-        if (!histories || !histories.length) return res.status(404).send('No histories found')
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 15)
+        startDate.setHours(0, 0, 0, 0)
+        const endDate = new Date()
+
+        const query = systemId ? { systemId } : { createdAt: { $gte: startDate, $lte: endDate } }
+
+        const histories = await History.find(query).limit(300).sort({ createdAt: -1 })
+        if (!histories || !histories.length) return res.status(200).send('No histories found')
 
         res.status(200).json(histories)
     } catch (err) {
@@ -60,7 +66,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
             module: 'History'
         })
 
-        res.status(200).json(newHistory)
+        res.status(201).json(newHistory)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -74,7 +80,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         let historyData = { ...req.body }
 
         const updated = await History.findByIdAndUpdate(_id, historyData, { returnDocument: "after", useFindAndModify: false })
-        if (!updated) return res.status(404).send('Error updating History')
+        if (!updated) return res.status(400).send('Error updating History')
 
         await AppLog.create({
             username: 'App',

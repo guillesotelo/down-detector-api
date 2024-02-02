@@ -1,6 +1,7 @@
 const express = require('express')
 const { UserAlert, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
+const { runSystemCheckLoop } = require('../helpers/statusCheck')
 const router = express.Router()
 
 //Get all UserAlerts
@@ -10,7 +11,7 @@ router.get('/getAll', async (req, res, next) => {
         const userAlerts = systemId ?
             await UserAlert.find({ systemId }).sort({ createdAt: -1 }) :
             await UserAlert.find().sort({ createdAt: -1 })
-        if (!userAlerts || !userAlerts.length) return res.status(404).send('No User Alerts found')
+        if (!userAlerts || !userAlerts.length) return res.status(200).send('No User Alerts found')
 
         res.status(200).json(userAlerts)
     } catch (err) {
@@ -40,6 +41,8 @@ router.post('/create', async (req, res, next) => {
         const newUserAlert = await UserAlert.create(req.body)
         if (!newUserAlert) return res.status(400).json('Error creating User Alert')
 
+        runSystemCheckLoop()
+
         await AppLog.create({
             username: user.username || createdBy,
             email: user.username || createdBy,
@@ -47,7 +50,7 @@ router.post('/create', async (req, res, next) => {
             module: 'User Alert'
         })
 
-        res.status(200).json(newUserAlert)
+        res.status(201).json(newUserAlert)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -61,7 +64,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         let userAlertData = { ...req.body }
 
         const updated = await UserAlert.findByIdAndUpdate(_id, userAlertData, { returnDocument: "after", useFindAndModify: false })
-        if (!updated) return res.status(404).send('Error updating User Alert')
+        if (!updated) return res.status(400).send('Error updating User Alert')
 
         await AppLog.create({
             username: user.username || 'anonymous',
