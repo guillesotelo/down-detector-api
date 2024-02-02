@@ -7,7 +7,7 @@ const router = express.Router()
 router.get('/getAll', verifyToken, async (req, res, next) => {
     try {
         const appLogs = await AppLog.find().sort({ createdAt: -1 })
-        if (!appLogs || !appLogs.length) return res.status(404).send('No App Logs found')
+        if (!appLogs || !appLogs.length) return res.status(200).send('No App Logs found')
 
         res.status(200).json(appLogs)
     } catch (err) {
@@ -36,7 +36,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
         const newAppLog = await AppLog.create(req.body)
         if (!newAppLog) return res.status(400).json('Error creating App Log')
 
-        res.status(200).json(newAppLog)
+        res.status(201).json(newAppLog)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -50,7 +50,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         let appLogData = { ...req.body }
 
         const updated = await AppLog.findByIdAndUpdate(_id, appLogData, { returnDocument: "after", useFindAndModify: false })
-        if (!updated) return res.status(404).send('Error updating App Log')
+        if (!updated) return res.status(400).send('Error updating App Log')
 
         res.status(200).json(updated)
     } catch (err) {

@@ -27,7 +27,7 @@ router.get('/getAllByOwnerId', async (req, res, next) => {
     try {
         const { _id } = req.query
         const systems = await System.find({ 'owners': _id }).sort({ createdAt: -1 })
-        if (!systems || !systems.length) return res.status(200).send('No systems found')
+        if (!systems || !systems.length) return res.status(404).send('No systems found')
 
         res.status(200).json(systems)
     } catch (err) {
@@ -87,7 +87,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
             module: 'System'
         })
 
-        res.status(200).json(newSystem)
+        res.status(201).json(newSystem)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -108,7 +108,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
             { returnDocument: "after", useFindAndModify: false }
         ).populate('owners')
 
-        if (!updatedSystem) return res.status(404).send('Error updating system')
+        if (!updatedSystem) return res.status(400).send('Error updating system')
 
         await User.updateMany(
             { _id: { $in: systemData.owners } },
@@ -165,7 +165,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         const { _id, user, name, url } = req.body
 
         const _system = await System.findById(_id)
-        if (!_system) return res.status(404).send('Error deleting system')
+        if (!_system) return res.status(404).send('System not found')
 
         const removed = await System.deleteOne({ _id })
 
@@ -180,7 +180,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
             details: `System removed: ${name} - ${url}`,
             module: 'System'
         })
-        if (!removed) return res.status(404).send('Error deleting system')
+        if (!removed) return res.status(400).send('Error deleting system')
 
         res.status(200).json(`System ${_id} deleted`)
     } catch (err) {

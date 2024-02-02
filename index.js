@@ -5,6 +5,13 @@ const { connection } = require("./api/db")
 const routes = require("./api/routes")
 const { runSystemCheckLoop } = require("./api/helpers/statusCheck")
 const app = express()
+const path = require('path')
+
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  next()
+})
 
 app.use(cors({
   origin: '*',
@@ -24,10 +31,10 @@ app.use((err, _, res, __) => {
 
 const PORT = process.env.PORT || 5000
 
-if(process.env.NODE_ENV === 'production') {
-  app.use(express.static('build'))
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '..', 'client', 'build')))
   app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, 'build', 'index.html'))
+    res.sendFile(path.resolve(__dirname, '..', 'client', 'build', 'index.html'))
   })
 }
 
