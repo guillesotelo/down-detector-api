@@ -159,6 +159,34 @@ router.post('/update', verifyToken, async (req, res, next) => {
     }
 })
 
+//Update system order
+router.post('/updateOrder', verifyToken, async (req, res, next) => {
+    try {
+        const { systems, user } = req.body
+        let updatedSystems = []
+        if (systems && systems.length) {
+            updatedSystems = await Promise.all(systems.map(async (system) =>
+                    System.findByIdAndUpdate(system._id, system, { returnDocument: "after", useFindAndModify: false })
+            ))
+            updatedSystems.forEach((updatedSystem, index) => {
+                if (!updatedSystem) console.error(`Unable to update system order: ${JSON.stringify(systems[index])}`)
+            })
+        }
+
+        await AppLog.create({
+            username: user.username || '',
+            email: user.email || '',
+            details: `Systems order updated`,
+            module: 'System'
+        })
+
+        res.status(200).json(updatedSystems)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
 //Remove system
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {

@@ -59,6 +59,9 @@ const systemSchema = new mongoose.Schema({
     logo: {
         type: String
     },
+    order: {
+        type: Number
+    },
 }, { timestamps: true })
 
 const System = mongoose.model('System', systemSchema)
