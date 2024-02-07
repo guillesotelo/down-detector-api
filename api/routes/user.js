@@ -1,7 +1,7 @@
 const dotenv = require('dotenv')
 const express = require('express')
 const router = express.Router()
-const { User, AppLog, System } = require('../db/models')
+const { User, AppLog, System, Config } = require('../db/models')
 const jwt = require('jsonwebtoken')
 dotenv.config()
 const { JWT_SECRET } = process.env
@@ -33,6 +33,7 @@ router.post('/login', async (req, res, next) => {
         }
 
         const token = jwt.sign({ sub: user._id }, JWT_SECRET, { expiresIn: '30d' })
+        const config = await Config.findOne({ name: 'app' }).exec()
 
         await AppLog.create({
             username: user.username,
@@ -41,7 +42,7 @@ router.post('/login', async (req, res, next) => {
             module: 'User'
         })
 
-        res.status(200).json({ ...user._doc, password: null, token })
+        res.status(200).json({ ...user._doc, password: null, token, config })
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -54,15 +55,17 @@ router.post('/verify', async (req, res, next) => {
         const { email } = req.body
         const bearerHeader = req.headers['authorization']
         if (bearerHeader) {
-            const bearerToken = bearerHeader.split(' ')[1]
-            jwt.verify(bearerToken, JWT_SECRET, async (error, _) => {
+            const token = bearerHeader.split(' ')[1]
+            jwt.verify(token, JWT_SECRET, async (error, _) => {
                 if (error) return res.status(403)
 
-                const userData = await User.findOne({ email }).exec()
+                const userData = await User.findOne({ email }).select('-password').exec()
+                const config = await Config.findOne({ name: 'app' }).exec()
+
                 res.status(200).json({
                     ...userData._doc,
-                    token: bearerToken,
-                    password: null
+                    token,
+                    config
                 })
             })
         } else res.status(403)
@@ -145,7 +148,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
         )
 
         const token = jwt.sign({ sub: newUser._id }, JWT_SECRET, { expiresIn: '30d' })
-        newUser.token = token
+        const config = await Config.findOne({ name: 'app' }).exec()
 
         await AppLog.create({
             username: user.username || '',
@@ -154,7 +157,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
             module: 'User'
         })
 
-        res.status(200).json(newUser)
+        res.status(200).json({ ...newUser._doc, token, config })
     } catch (err) {
         console.error('Something went wrong!', err)
         return res.status(500).send('Server Error')

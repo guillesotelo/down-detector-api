@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 
-const appSchema = new mongoose.Schema({
+const configSchema = new mongoose.Schema({
     name: {
         type: String
     },
@@ -24,6 +24,6 @@ const appSchema = new mongoose.Schema({
     },
 }, { timestamps: true })
 
-const App = mongoose.model('App', appSchema)
+const Config = mongoose.model('Config', configSchema)
 
-module.exports = App
+module.exports = Config
