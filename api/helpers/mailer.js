@@ -11,18 +11,18 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-transporter.verify().then(() => {
-  console.log("* Mailing ready *")
-}).catch((err) => {
-  console.error('Nodemailer error', err)
-})
+// transporter.verify().then(() => {
+//   console.log("* Mailing ready *")
+// }).catch((err) => {
+//   console.error('Nodemailer error', err)
+// })
 
 const sendEmail = async (data, to, subject) => {
   await transporter.sendMail({
-    from: `"DownDetector" <${process.env.EMAIL}>`,
+    from: `"{process.env.APP_NAME}" <${process.env.EMAIL}>`,
     to,
     subject,
-    html: data.html || ''
+    html: data
   }).catch((err) => {
     console.error('Nodemailer (Send) error', err)
   })

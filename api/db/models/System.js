@@ -62,6 +62,9 @@ const systemSchema = new mongoose.Schema({
     order: {
         type: Number
     },
+    bannerFlag: {
+        type: Date | null
+    }
 }, { timestamps: true })
 
 const System = mongoose.model('System', systemSchema)

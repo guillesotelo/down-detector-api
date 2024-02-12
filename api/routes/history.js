@@ -106,7 +106,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         await AppLog.create({
             username: 'App',
             email: 'hpdevp@company.com',
-            details: `History removed: ${history.url} - System: ${updated.systemId}`,
+            details: `History removed: ${history.url} - System: ${history.systemId}`,
             module: 'History'
         })
 
