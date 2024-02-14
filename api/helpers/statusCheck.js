@@ -49,6 +49,17 @@ const checkZuulStatus = (system, json) => {
     }
 }
 
+const getBroadcastedMessages = async url => {
+    try {
+        const res = await fetch(url)
+        const json = await res.text() || []
+        return JSON.stringify(json)
+    } catch (error) {
+        console.error(error)
+        return '[]'
+    }
+}
+
 const getSystemStatus = async (system, response) => {
     try {
         const { name } = system
@@ -65,6 +76,7 @@ const getSystemStatus = async (system, response) => {
         const isInternal = internalSystems.filter(intName => systemName.includes(intName)).length
 
         let jsonResponse
+        let broadcastMessages = '[]'
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
             const textResponse = await response.text()
@@ -97,8 +109,10 @@ const getSystemStatus = async (system, response) => {
                 }
             }
             else if (systemName.includes('gitlab')) {
+                broadcastMessages = await getBroadcastedMessages('https://gitlab.cm.company.biz/api/v4/broadcast_messages')
                 if (stringJsonResponse.split('ok').length && stringJsonResponse.split('ok').length >= 16) {
                     return {
+                        broadcastMessages,
                         raw: stringJsonResponse,
                         status: true,
                         message: `API up and running`
@@ -128,12 +142,14 @@ const getSystemStatus = async (system, response) => {
 
         else if (response.ok) {
             return {
+                broadcastMessages,
                 raw: stringJsonResponse,
                 status: true,
                 message: `API up and running`
             }
         }
         return {
+            broadcastMessages,
             raw: stringJsonResponse,
             status: false,
             message: `Error while checking system: ${name}`
@@ -179,7 +195,7 @@ const checkAllSystems = async () => {
         console.log('# # # # Checking systems # # # #')
         const promises = systems.map(async (system) => {
             const { _id, name, url, description, alertThreshold, alertsExpiration } = system
-            const { status, raw } = await checkSystemStatus(system)
+            const { status, raw, broadcastMessages } = await checkSystemStatus(system)
 
             let systemStatus = status
             let reportedlyDown = false
@@ -219,6 +235,7 @@ const checkAllSystems = async () => {
 
 
             if (exists && exists.length && exists[0]._id) {
+                // Current status is different from last check
                 if (systemStatus !== exists[0].status) {
                     updatedCount++
                     await System.findByIdAndUpdate(_id,
@@ -226,7 +243,8 @@ const checkAllSystems = async () => {
                             lastCheck: new Date(),
                             lastCheckStatus: systemStatus,
                             reportedlyDown,
-                            raw
+                            raw,
+                            broadcastMessages
                         },
                         { returnDocument: "after", useFindAndModify: false })
 
@@ -237,14 +255,30 @@ const checkAllSystems = async () => {
                         description,
                         raw
                     })
-                } else return exists[0]
+                } else {
+                    // Same status, check for banner or message on the system page
+                    if (broadcastMessages && broadcastMessages !== '[]') {
+                        await System.findByIdAndUpdate(_id,
+                            {
+                                lastCheck: new Date(),
+                                lastCheckStatus: systemStatus,
+                                reportedlyDown,
+                                raw,
+                                broadcastMessages
+                            },
+                            { returnDocument: "after", useFindAndModify: false })
+                    }
+                    return exists[0]
+                }
             } else {
+                // First time check, updating both system and history
                 await System.findByIdAndUpdate(system._id,
                     {
                         lastCheck: new Date(),
                         lastCheckStatus: systemStatus,
                         reportedlyDown,
-                        raw
+                        raw,
+                        broadcastMessages
                     },
                     { returnDocument: "after", useFindAndModify: false })
 

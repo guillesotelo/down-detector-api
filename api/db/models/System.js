@@ -64,6 +64,9 @@ const systemSchema = new mongoose.Schema({
     },
     bannerFlag: {
         type: Date | null
+    },
+    broadcastMessages: {
+        type: String
     }
 }, { timestamps: true })
 
