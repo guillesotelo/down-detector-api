@@ -104,7 +104,7 @@ So you would have something like this:
 
 ```bash
 <VirtualHost *:80>
-    ServerName downdetector.servername.com
+    ServerName down.servername.com
 
     # Proxy requests to the React app
     ProxyPass / http://localhost:3000/
@@ -115,7 +115,7 @@ So you would have something like this:
 </VirtualHost>
 
 <VirtualHost *:80>
-    ServerName downdetector-api.servername.com
+    ServerName down-api.servername.com
 
     # Proxy requests to the Node.js backend
     ProxyPass / http://localhost:5000/
@@ -135,8 +135,8 @@ sudo nano /etc/hosts
 Paste the following lines:
 
 ```bash
-127.0.0.1 downdetector.servername.com
-127.0.0.1 downdetector-api.servername.com
+127.0.0.1 down.servername.com
+127.0.0.1 down-api.servername.com
 ```
 
 Keep in mind that when deploying into a different production server, we will need to update these names.
