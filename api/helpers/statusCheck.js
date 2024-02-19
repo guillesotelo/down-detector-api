@@ -1,3 +1,4 @@
+const { isValidUrl } = require(".")
 const { System, History, AppLog, UserAlert } = require("../db/models")
 let intervalId = null
 const zuul_events = [
@@ -62,7 +63,7 @@ const getBroadcastedMessages = async url => {
 
 const getSystemStatus = async (system, response) => {
     try {
-        const { name } = system
+        const { name, broadcastMessages } = system
         const systemName = name.toLowerCase()
         const internalSystems = [
             'vira',
@@ -76,7 +77,7 @@ const getSystemStatus = async (system, response) => {
         const isInternal = internalSystems.filter(intName => systemName.includes(intName)).length
 
         let jsonResponse
-        let broadcastMessages = '[]'
+        let newBroadcast = broadcastMessages || '[]'
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
             const textResponse = await response.text()
@@ -109,10 +110,10 @@ const getSystemStatus = async (system, response) => {
                 }
             }
             else if (systemName.includes('gitlab')) {
-                broadcastMessages = await getBroadcastedMessages('https://gitlab.cm.company.biz/api/v4/broadcast_messages')
+                newBroadcast = await getBroadcastedMessages('https://gitlab.cm.company.biz/api/v4/broadcast_messages')
                 if (stringJsonResponse.split('ok').length && stringJsonResponse.split('ok').length >= 16) {
                     return {
-                        broadcastMessages,
+                        broadcastMessages: newBroadcast,
                         raw: stringJsonResponse,
                         status: true,
                         message: `API up and running`
@@ -142,17 +143,19 @@ const getSystemStatus = async (system, response) => {
 
         else if (response.ok) {
             return {
-                broadcastMessages,
+                broadcastMessages: newBroadcast,
                 raw: stringJsonResponse,
                 status: true,
-                message: `API up and running`
+                message: `API up and running`,
+                firstStatus: true
             }
         }
         return {
-            broadcastMessages,
+            broadcastMessages: newBroadcast,
             raw: stringJsonResponse,
             status: false,
-            message: `Error while checking system: ${name}`
+            message: `Error while checking system: ${name}`,
+            firstStatus: false
         }
 
     } catch (error) {
@@ -160,14 +163,25 @@ const getSystemStatus = async (system, response) => {
         return {
             raw: String(error),
             status: false,
-            message: `An unexpected error occurred: ${error}`
+            message: `An unexpected error occurred: ${error}`,
+            firstStatus: false
         }
     }
 }
 
 const checkSystemStatus = async (system) => {
     try {
-        const { url, timeout, name } = system
+        const { url, timeout, name, broadcastMessages } = system
+
+        if (!isValidUrl(url)) {
+            return {
+                raw: '{}',
+                status: false,
+                message: `URL not valid: "${url}"`,
+                broadcastMessages: broadcastMessages || '[]'
+            }
+        }
+
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), timeout || 10000)
         const response = await fetch(url, { signal: controller.signal })
@@ -182,7 +196,8 @@ const checkSystemStatus = async (system) => {
         return {
             raw: JSON.stringify(error),
             status: false,
-            message: `Unexpected error occurred: ${error}`
+            message: `Unexpected error occurred: ${error}`,
+            broadcastMessages: '[]'
         }
     }
 }
@@ -195,7 +210,7 @@ const checkAllSystems = async () => {
         console.log('# # # # Checking systems # # # #')
         const promises = systems.map(async (system) => {
             const { _id, name, url, description, alertThreshold, alertsExpiration } = system
-            const { status, raw, broadcastMessages } = await checkSystemStatus(system)
+            const { status, firstStatus, raw, broadcastMessages } = await checkSystemStatus(system)
 
             let systemStatus = status
             let reportedlyDown = false
@@ -231,8 +246,6 @@ const checkAllSystems = async () => {
                     reportedlyDown = true
                 }
             }
-
-
 
             if (exists && exists.length && exists[0]._id) {
                 // Current status is different from last check
@@ -278,7 +291,8 @@ const checkAllSystems = async () => {
                         lastCheckStatus: systemStatus,
                         reportedlyDown,
                         raw,
-                        broadcastMessages
+                        broadcastMessages,
+                        firstStatus
                     },
                     { returnDocument: "after", useFindAndModify: false })
 

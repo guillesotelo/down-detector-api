@@ -38,9 +38,16 @@ const isJson = str => {
     return true
 }
 
+const isValidUrl = (url) => {
+    if(!url.trim()) return false
+    const regex = /[^\w\s\-._~:/?#[\]@!$&'()*+,;=%]/
+    return !regex.test(url)
+}
+
 module.exports = {
     encrypt,
     decrypt,
     verifyToken,
-    isJson
+    isJson,
+    isValidUrl
 }

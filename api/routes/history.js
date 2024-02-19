@@ -9,13 +9,14 @@ router.get('/getAll', async (req, res, next) => {
     try {
         const { systemId } = req.query
         const startDate = new Date()
-        startDate.setDate(startDate.getDate() - 15)
+        startDate.setDate(startDate.getDate() - 16)
         startDate.setHours(0, 0, 0, 0)
         const endDate = new Date()
 
-        const query = systemId ? { systemId } : { createdAt: { $gte: startDate, $lte: endDate } }
+        const query = systemId ? { systemId, createdAt: { $gte: startDate, $lte: endDate } }
+            : { createdAt: { $gte: startDate, $lte: endDate } }
 
-        const histories = await History.find(query).limit(300).sort({ createdAt: -1 })
+        const histories = await History.find(query).sort({ createdAt: -1 })
         if (!histories || !histories.length) return res.status(200).send('No histories found')
 
         res.status(200).json(histories)

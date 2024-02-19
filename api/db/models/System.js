@@ -67,6 +67,10 @@ const systemSchema = new mongoose.Schema({
     },
     broadcastMessages: {
         type: String
+    },
+    firstStatus: {
+        type: Boolean,
+        default: true
     }
 }, { timestamps: true })
 
