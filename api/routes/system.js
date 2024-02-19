@@ -11,8 +11,8 @@ router.get('/getAll', async (req, res, next) => {
         const user = await User.findById(_id)
 
         const systems = user && user.isSuper ?
-            await System.find({ active: true }).sort({ createdAt: -1 }).populate({ path: 'owners', select: '-password' })
-            : await System.find({ active: true }).sort({ createdAt: -1 })
+            await System.find().sort({ createdAt: -1 }).populate({ path: 'owners', select: '-password' })
+            : await System.find().sort({ createdAt: -1 })
         if (!systems || !systems.length) return res.status(200).send('No systems found')
 
         res.status(200).json(systems)
@@ -21,6 +21,20 @@ router.get('/getAll', async (req, res, next) => {
         res.status(500).send('Server Error')
     }
 })
+
+//Get active systems
+router.get('/getActive', async (req, res, next) => {
+    try {
+        const systems = await System.find({ active: true }).sort({ createdAt: -1 })
+        if (!systems || !systems.length) return res.status(200).send('No systems found')
+
+        res.status(200).json(systems)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
 
 //Get system by ID
 router.get('/getAllByOwnerId', async (req, res, next) => {
@@ -166,7 +180,7 @@ router.post('/updateOrder', verifyToken, async (req, res, next) => {
         let updatedSystems = []
         if (systems && systems.length) {
             updatedSystems = await Promise.all(systems.map(async (system) =>
-                    System.findByIdAndUpdate(system._id, system, { returnDocument: "after", useFindAndModify: false })
+                System.findByIdAndUpdate(system._id, system, { returnDocument: "after", useFindAndModify: false })
             ))
             updatedSystems.forEach((updatedSystem, index) => {
                 if (!updatedSystem) console.error(`Unable to update system order: ${JSON.stringify(systems[index])}`)
