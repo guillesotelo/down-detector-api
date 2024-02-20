@@ -53,8 +53,11 @@ const checkZuulStatus = (system, json) => {
 const getBroadcastedMessages = async url => {
     try {
         const res = await fetch(url)
-        const json = await res.text() || []
-        return JSON.stringify(json)
+        if (res.headers.get('content-type').includes('application/json')) {
+            const json = await res.text() || []
+            return JSON.stringify(json)
+        }
+        return '[]'
     } catch (error) {
         console.error(error)
         return '[]'
@@ -210,7 +213,7 @@ const checkAllSystems = async () => {
         console.log('# # # # Checking systems # # # #')
         const promises = systems.map(async (system) => {
             const { _id, name, url, description, alertThreshold, alertsExpiration } = system
-            const { status, firstStatus, raw, broadcastMessages } = await checkSystemStatus(system)
+            const { status, firstStatus, raw, broadcastMessages, message } = await checkSystemStatus(system)
 
             let systemStatus = status
             let reportedlyDown = false
@@ -266,7 +269,8 @@ const checkAllSystems = async () => {
                         url,
                         status: systemStatus,
                         description,
-                        raw
+                        raw,
+                        message
                     })
                 } else {
                     // Same status, check for banner or message on the system page
@@ -301,7 +305,8 @@ const checkAllSystems = async () => {
                     url,
                     status: systemStatus,
                     description,
-                    raw
+                    raw,
+                    message
                 })
             }
         })

@@ -10,6 +10,9 @@ const historySchema = new mongoose.Schema({
     status: {
         type: Boolean
     },
+    message: {
+        type: String
+    },
     description: {
         type: String
     },
