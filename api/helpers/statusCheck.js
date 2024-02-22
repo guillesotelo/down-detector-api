@@ -1,5 +1,5 @@
 const { isValidUrl } = require(".")
-const { System, History, AppLog, UserAlert } = require("../db/models")
+const { System, History, AppLog, UserAlert, Event } = require("../db/models")
 let intervalId = null
 const zuul_events = [
     "ad-zen-gerrit",
@@ -40,13 +40,13 @@ const checkZuulStatus = (system, json) => {
         return {
             raw: stringJson,
             status: check,
-            message: `API up and running`
+            message: `System up and running`
         }
     }
     return {
         raw: stringJson,
         status: false,
-        message: `Error while checking system: ${system.name}`
+        message: `Unexpected error: ${system.name}`
     }
 }
 
@@ -55,7 +55,7 @@ const getBroadcastedMessages = async url => {
         const res = await fetch(url)
         if (res.headers.get('content-type').includes('application/json')) {
             const json = await res.text() || []
-            return JSON.stringify(json)
+            return typeof json === 'string' ? json : JSON.stringify(json)
         }
         return '[]'
     } catch (error) {
@@ -82,14 +82,14 @@ const getSystemStatus = async (system, response) => {
         let jsonResponse
         let newBroadcast = broadcastMessages || '[]'
         const contentType = response.headers.get('content-type')
+        const textResponse = await response.text()
         if (contentType && contentType.includes('application/json')) {
-            const textResponse = await response.text()
             const jsonpPrefix = ')]}\''
             if (textResponse.startsWith(jsonpPrefix)) {
                 const jsonpBody = textResponse.slice(jsonpPrefix.length)
                 jsonResponse = JSON.parse(jsonpBody)
             } else jsonResponse = JSON.parse(textResponse)
-        } else jsonResponse = await response.text()
+        } else jsonResponse = textResponse
 
         const stringJsonResponse = JSON.stringify(jsonResponse)
 
@@ -99,7 +99,7 @@ const getSystemStatus = async (system, response) => {
                     return {
                         raw: stringJsonResponse,
                         status: true,
-                        message: `API up and running`
+                        message: `System up and running`
                     }
                 }
             }
@@ -108,7 +108,7 @@ const getSystemStatus = async (system, response) => {
                     return {
                         raw: stringJsonResponse,
                         status: true,
-                        message: `API up and running`
+                        message: `System up and running`
                     }
                 }
             }
@@ -119,7 +119,7 @@ const getSystemStatus = async (system, response) => {
                         broadcastMessages: newBroadcast,
                         raw: stringJsonResponse,
                         status: true,
-                        message: `API up and running`
+                        message: `System up and running`
                     }
                 }
             }
@@ -128,7 +128,7 @@ const getSystemStatus = async (system, response) => {
                     return {
                         raw: stringJsonResponse,
                         status: true,
-                        message: `API up and running`
+                        message: `System up and running`
                     }
                 }
             }
@@ -137,7 +137,7 @@ const getSystemStatus = async (system, response) => {
                     return {
                         raw: stringJsonResponse,
                         status: true,
-                        message: `API up and running`
+                        message: `System up and running`
                     }
                 }
             }
@@ -149,7 +149,7 @@ const getSystemStatus = async (system, response) => {
                 broadcastMessages: newBroadcast,
                 raw: stringJsonResponse,
                 status: true,
-                message: `API up and running`,
+                message: `System up and running`,
                 firstStatus: true
             }
         }
@@ -157,7 +157,7 @@ const getSystemStatus = async (system, response) => {
             broadcastMessages: newBroadcast,
             raw: stringJsonResponse,
             status: false,
-            message: `Error while checking system: ${name}`,
+            message: `Wrong response type: ${name}`,
             firstStatus: false
         }
 
@@ -166,7 +166,7 @@ const getSystemStatus = async (system, response) => {
         return {
             raw: String(error),
             status: false,
-            message: `An unexpected error occurred: ${error}`,
+            message: `Unexpected error: ${error}`,
             firstStatus: false
         }
     }
@@ -199,7 +199,7 @@ const checkSystemStatus = async (system) => {
         return {
             raw: JSON.stringify(error),
             status: false,
-            message: `Unexpected error occurred: ${error}`,
+            message: `Unexpected error: ${error}`,
             broadcastMessages: '[]'
         }
     }
@@ -250,6 +250,7 @@ const checkAllSystems = async () => {
                 }
             }
 
+            const downtimeArray = JSON.parse(broadcastMessages || '[]')
             if (exists && exists.length && exists[0]._id) {
                 // Current status is different from last check
                 if (systemStatus !== exists[0].status) {
@@ -263,6 +264,20 @@ const checkAllSystems = async () => {
                             broadcastMessages
                         },
                         { returnDocument: "after", useFindAndModify: false })
+
+                    if (downtimeArray && downtimeArray.length) {
+                        await Promise.all(downtimeArray.map(async (downtime) => {
+                            if (downtime.active) {
+                                return Event.create({
+                                    systemId: _id,
+                                    start: downtime.starts_at,
+                                    end: downtime.ends_at,
+                                    note: downtime.message,
+                                    updatedBy: 'API'
+                                })
+                            } return null
+                        }))
+                    }
 
                     return await History.create({
                         systemId: _id,
@@ -285,6 +300,19 @@ const checkAllSystems = async () => {
                             },
                             { returnDocument: "after", useFindAndModify: false })
                     }
+                    if (downtimeArray && downtimeArray.length) {
+                        await Promise.all(downtimeArray.map(async (downtime) => {
+                            if (downtime.active) {
+                                return Event.create({
+                                    systemId: _id,
+                                    start: downtime.starts_at,
+                                    end: downtime.ends_at,
+                                    note: downtime.message,
+                                    updatedBy: 'API'
+                                })
+                            } return null
+                        }))
+                    }
                     return exists[0]
                 }
             } else {
@@ -299,6 +327,20 @@ const checkAllSystems = async () => {
                         firstStatus
                     },
                     { returnDocument: "after", useFindAndModify: false })
+
+                if (downtimeArray && downtimeArray.length) {
+                    await Promise.all(downtimeArray.map(async (downtime) => {
+                        if (downtime.active) {
+                            return Event.create({
+                                systemId: _id,
+                                start: downtime.starts_at,
+                                end: downtime.ends_at,
+                                note: downtime.message,
+                                updatedBy: 'API'
+                            })
+                        } return null
+                    }))
+                }
 
                 return await History.create({
                     systemId: _id,

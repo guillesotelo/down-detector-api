@@ -1,6 +1,5 @@
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
-const { System } = require('./models');
 
 dotenv.config();
 
@@ -17,9 +16,6 @@ const connect = async () => {
     db.on('error', console.error.bind(console, 'MongoDB connection error:'));
     db.once('open', async () => {
         console.log('Connected to MongoDB');
-    
-        // Testing DB: create a new row in document System
-        // await System.create({ url: 'test'})
     });
 }
 
