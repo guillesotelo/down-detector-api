@@ -21,6 +21,10 @@ const historySchema = new mongoose.Schema({
     },
 }, { timestamps: true })
 
+// Index definitions (query performance)
+historySchema.index({ systemId: 1, createdAt: -1 })
+historySchema.index({ createdAt: -1 })
+
 const History = mongoose.model('History', historySchema)
 
 module.exports = History
