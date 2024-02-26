@@ -40,7 +40,7 @@ router.get('/getActive', async (req, res, next) => {
 router.get('/getAllByOwnerId', async (req, res, next) => {
     try {
         const { _id } = req.query
-        const systems = await System.find({ 'owners': _id }).sort({ createdAt: -1 })
+        const systems = await System.find({ 'owners': _id }).populate({ path: 'owners', select: '-password' }).sort({ createdAt: -1 })
         if (!systems || !systems.length) return res.status(404).send('No systems found')
 
         res.status(200).json(systems)

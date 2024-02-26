@@ -16,7 +16,7 @@ router.get('/getAll', async (req, res, next) => {
         const query = systemId ? { systemId, createdAt: { $gte: startDate, $lte: endDate } }
             : { createdAt: { $gte: startDate, $lte: endDate } }
 
-        const histories = await History.find(query).sort({ createdAt: -1 })
+        const histories = await History.find(query).select('-raw -description -url').sort({ createdAt: -1 })
         if (!histories || !histories.length) return res.status(200).send('No histories found')
 
         res.status(200).json(histories)
@@ -44,7 +44,14 @@ router.get('/getById', async (req, res, next) => {
 router.get('/getBySystemId', async (req, res, next) => {
     try {
         const { _id } = req.query
-        const history = await History.find({ systemId: _id }).sort({ createdAt: -1 })
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 16)
+        startDate.setHours(0, 0, 0, 0)
+        const endDate = new Date()
+
+        const query = { systemId: _id, createdAt: { $gte: startDate, $lte: endDate } }
+
+        const history = await History.find(query).sort({ createdAt: -1 })
         if (!history || !history.length) return res.status(404).send('History not found for given system')
 
         res.status(200).json(history)

@@ -128,7 +128,9 @@ router.post('/update', verifyToken, async (req, res, next) => {
         const { _id, newData, user } = req.body
         const { ownedSystems } = newData
 
-        newData.systems = ownedSystems.map(system => system._id)
+        if (ownedSystems && Array.isArray(ownedSystems)) {
+            newData.systems = ownedSystems.map(system => system._id)
+        }
 
         const newUser = await User.findByIdAndUpdate(
             _id,
