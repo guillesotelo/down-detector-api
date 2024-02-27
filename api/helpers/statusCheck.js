@@ -68,16 +68,6 @@ const getSystemStatus = async (system, response) => {
     try {
         const { name, broadcastMessages } = system
         const systemName = name.toLowerCase()
-        const internalSystems = [
-            'vira',
-            'confluence',
-            'artifactory',
-            'gitlab',
-            'zuul',
-            'gerrit',
-            'victoria'
-        ]
-        const isInternal = internalSystems.filter(intName => systemName.includes(intName)).length
 
         let jsonResponse
         let newBroadcast = broadcastMessages || '[]'
@@ -93,56 +83,106 @@ const getSystemStatus = async (system, response) => {
 
         const stringJsonResponse = JSON.stringify(jsonResponse)
 
-        if (isInternal) {
-            if (systemName.includes('vira') || systemName.includes('confluence')) {
-                if (jsonResponse.state && jsonResponse.state === 'RUNNING') {
-                    return {
-                        raw: stringJsonResponse,
-                        status: true,
-                        message: `System up and running`
-                    }
+        if (systemName.includes('vira') || systemName.includes('confluence')) {
+            newBroadcast = await getBroadcastedMessages('https://confluence.company.biz/')
+            if (jsonResponse.state && jsonResponse.state === 'RUNNING') {
+                return {
+                    broadcastMessages: newBroadcast,
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
                 }
             }
-            else if (systemName.includes('artifactory')) {
-                if (jsonResponse.code && jsonResponse.code === 'OK') {
-                    return {
-                        raw: stringJsonResponse,
-                        status: true,
-                        message: `System up and running`
-                    }
-                }
-            }
-            else if (systemName.includes('gitlab')) {
-                newBroadcast = await getBroadcastedMessages('https://gitlab.cm.company.biz/api/v4/broadcast_messages')
-                if (stringJsonResponse.split('ok').length && stringJsonResponse.split('ok').length >= 16) {
-                    return {
-                        broadcastMessages: newBroadcast,
-                        raw: stringJsonResponse,
-                        status: true,
-                        message: `System up and running`
-                    }
-                }
-            }
-            else if (systemName.includes('gerrit')) {
-                if (jsonResponse.gerrit) {
-                    return {
-                        raw: stringJsonResponse,
-                        status: true,
-                        message: `System up and running`
-                    }
-                }
-            }
-            else if (systemName.includes('victoria')) {
-                if (jsonResponse.length && jsonResponse.length > 10000) {
-                    return {
-                        raw: stringJsonResponse,
-                        status: true,
-                        message: `System up and running`
-                    }
-                }
-            }
-            else if (systemName.includes('zuul')) return checkZuulStatus(system, jsonResponse)
         }
+        else if (systemName.includes('artifactory')) {
+            if (jsonResponse.code && jsonResponse.code === 'OK') {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('gitlab')) {
+            newBroadcast = await getBroadcastedMessages('https://gitlab.cm.company.biz/api/v4/broadcast_messages')
+            if (stringJsonResponse.split('ok').length && stringJsonResponse.split('ok').length >= 16) {
+                return {
+                    broadcastMessages: newBroadcast,
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('gerrit')) {
+            if (jsonResponse.gerrit) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('victoria')) {
+            if (jsonResponse.length && jsonResponse.length > 10000) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('rms')) {
+            if (jsonResponse.includes('<title>RMS</title>') &&
+                jsonResponse.includes('bundle.js')) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('confighub')) {
+            if (jsonResponse.includes('<title>ConfigHub</title>') &&
+                jsonResponse.length > 3000) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('hp report')) {
+            if (jsonResponse.includes('HP Software Platform') &&
+                jsonResponse.length > 3500) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('cs stats')) {
+            if (jsonResponse.length > 700000) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('hp developer portal')) {
+            if (jsonResponse.includes('HP Developer Portal') &&
+                jsonResponse.length > 20000) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+
+        else if (systemName.includes('zuul')) return checkZuulStatus(system, jsonResponse)
 
         else if (response.ok) {
             return {

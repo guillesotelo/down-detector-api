@@ -72,7 +72,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
         await AppLog.create({
             username: 'App',
             email: 'hpdevp@company.com',
-            details: `History created: ${newHistory.url} - Status: ${newHistory.status ? 'UP' : 'DOWN'} - System: ${updated.systemId}`,
+            details: `History created: ${newHistory.url} - Status: ${newHistory.status ? 'UP' : 'DOWN'} - System: ${newHistory.systemId}`,
             module: 'History'
         })
 
