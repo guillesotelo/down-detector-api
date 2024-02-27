@@ -7,7 +7,7 @@ const moment = require('moment')
 //Get all histories
 router.get('/getAll', async (req, res, next) => {
     try {
-        const { systemId } = req.query
+        const { systemId, getRaw } = req.query
         const startDate = new Date()
         startDate.setDate(startDate.getDate() - 16)
         startDate.setHours(0, 0, 0, 0)
@@ -16,7 +16,9 @@ router.get('/getAll', async (req, res, next) => {
         const query = systemId ? { systemId, createdAt: { $gte: startDate, $lte: endDate } }
             : { createdAt: { $gte: startDate, $lte: endDate } }
 
-        const histories = await History.find(query).select('-raw -description -url').sort({ createdAt: -1 })
+        const select = `${getRaw === 'true' ? '' : '-raw'} -description`
+
+        const histories = await History.find(query).select(select).sort({ createdAt: -1 })
         if (!histories || !histories.length) return res.status(200).send('No histories found')
 
         res.status(200).json(histories)
