@@ -13,6 +13,9 @@ const userAlertSchema = new mongoose.Schema({
     description: {
         type: String
     },
+    message: {
+        type: String
+    },
     geoLocation: {
         type: String
     },

@@ -144,7 +144,7 @@ const getSystemStatus = async (system, response) => {
         }
         else if (systemName.includes('confighub')) {
             if (jsonResponse.includes('<title>ConfigHub</title>') &&
-                jsonResponse.length > 3000) {
+                jsonResponse.length > 1000) {
                 return {
                     raw: stringJsonResponse,
                     status: true,
@@ -154,7 +154,7 @@ const getSystemStatus = async (system, response) => {
         }
         else if (systemName.includes('hp report')) {
             if (jsonResponse.includes('HP Software Platform') &&
-                jsonResponse.length > 3500) {
+                jsonResponse.length > 1000) {
                 return {
                     raw: stringJsonResponse,
                     status: true,
@@ -163,7 +163,7 @@ const getSystemStatus = async (system, response) => {
             }
         }
         else if (systemName.includes('cs stats')) {
-            if (jsonResponse.length > 700000) {
+            if (jsonResponse.length > 100000) {
                 return {
                     raw: stringJsonResponse,
                     status: true,
@@ -173,7 +173,16 @@ const getSystemStatus = async (system, response) => {
         }
         else if (systemName.includes('hp developer portal')) {
             if (jsonResponse.includes('HP Developer Portal') &&
-                jsonResponse.length > 20000) {
+                jsonResponse.length > 10000) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+        else if (systemName.includes('grafana')) {
+            if (jsonResponse.length > 300) {
                 return {
                     raw: stringJsonResponse,
                     status: true,
