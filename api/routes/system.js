@@ -1,7 +1,7 @@
 const express = require('express')
 const { System, Event, History, AppLog, User } = require('../db/models')
 const { verifyToken } = require('../helpers')
-const { checkSystemStatus } = require('../helpers/statusCheck')
+const { checkSystemStatus } = require('../main/statusCheck')
 const router = express.Router()
 
 //Get all systems

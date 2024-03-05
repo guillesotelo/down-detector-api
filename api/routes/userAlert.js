@@ -1,7 +1,7 @@
 const express = require('express')
 const { UserAlert, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
-const { runSystemCheckLoop } = require('../helpers/statusCheck')
+const { runSystemCheckLoop } = require('../main/statusCheck')
 const router = express.Router()
 
 //Get all UserAlerts
@@ -37,7 +37,7 @@ router.get('/getById', async (req, res, next) => {
 //Create new UserAlert
 router.post('/create', async (req, res, next) => {
     try {
-        const { createdBy, url, systemId, user } = req.body        
+        const { createdBy, message, user, name } = req.body        
         const newUserAlert = await UserAlert.create(req.body)
         if (!newUserAlert) return res.status(400).json('Error creating User Alert')
 
@@ -46,7 +46,7 @@ router.post('/create', async (req, res, next) => {
         await AppLog.create({
             username: user.username || createdBy,
             email: user.username || createdBy,
-            details: `Alert created: ${url} - System: ${systemId}`,
+            details: `Alert created: ${name} - ${message}`,
             module: 'User Alert'
         })
 

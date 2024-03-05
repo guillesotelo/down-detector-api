@@ -71,6 +71,9 @@ const systemSchema = new mongoose.Schema({
     firstStatus: {
         type: Boolean,
         default: true
+    },
+    emailSent: {
+        type: Date,
     }
 }, { timestamps: true })
 

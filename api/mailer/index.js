@@ -2,14 +2,10 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+  sendmail: true,
+  newline: 'unix',
+  path: '/usr/sbin/sendmail'
+})
 
 // transporter.verify().then(() => {
 //   console.log("* Mailing ready *")
@@ -19,10 +15,10 @@ const transporter = nodemailer.createTransport({
 
 const sendEmail = async (data, to, subject) => {
   await transporter.sendMail({
-    from: `"{process.env.APP_NAME}" <${process.env.EMAIL}>`,
+    from: `"{process.env.APP_NAME}" <hpdevp@company.com>`,
     to,
     subject,
-    html: data
+    html: data.html
   }).catch((err) => {
     console.error('Nodemailer (Send) error', err)
   })

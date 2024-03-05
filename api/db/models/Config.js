@@ -22,6 +22,9 @@ const configSchema = new mongoose.Schema({
     version: {
         type: String
     },
+    lastDump: {
+        type: Date
+    },
 }, { timestamps: true })
 
 const Config = mongoose.model('Config', configSchema)
