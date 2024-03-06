@@ -4,7 +4,7 @@ dotenv.config()
 const { isValidUrl } = require("../helpers")
 const { System, History, AppLog, UserAlert, Event, Config } = require("../db/models")
 const { sendEmail } = require("../mailer")
-const { systemDown } = require("../mailer/emailTemplates")
+const { systemDown, systemUp } = require("../mailer/emailTemplates")
 let intervalId = null
 const zuul_events = [
     "ad-zen-gerrit",
@@ -319,7 +319,8 @@ const checkAllSystems = async () => {
                     alertThreshold,
                     alertsExpiration,
                     owners,
-                    emailSent
+                    emailSent,
+                    emailSentStatus
                 } = system
                 const { status, firstStatus, raw, broadcastMessages, message } = await checkSystemStatus(system)
 
@@ -397,30 +398,39 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
-                        // Check last register and if more than 3 minutes passed, email owner(s)
+                        // await sendEmail(
+                        //     { html: systemDown({ ...system._doc, owner: 'Guillermo Sotelo', message }) },
+                        //     'gsotelo@company.com',
+                        //     `Testing down template: ${name}`
+                        // )
+
+                        // Check last register and if more than 3 minutes passed, email owner(s). Send email when up again.
                         const lastCheckedTime = new Date(exists[0].createdAt || new Date()).getTime()
                         const currentTime = new Date().getTime()
                         const emailTime = emailSent ? new Date(emailSent).getTime() : null
-                        if (!systemStatus && (!emailTime || currentTime - emailTime > 60000 * 60 * 24)
-                            && currentTime - lastCheckedTime > 180000) {
 
-                            await sendEmail(
-                                { html: systemDown({ ...system._doc, owner: 'Guillermo Sotelo', message }) },
-                                'gsotelo@company.com',
-                                `${name} is currently down`
-                            )
+                        if (Array.isArray(owners)) {
 
-                            await System.findByIdAndUpdate(_id, { emailSent: new Date() }, { returnDocument: "after", useFindAndModify: false })
-
-                            // if (Array.isArray(owners)) {
-                            //     await Promise.all(owners.map(owner => {
-                            //         return sendEmail(
-                            //             { html: systemDown({ ...system._doc, owner: owner.username, message }) },
-                            //             owner.email,
-                            //             `${name} is currently down`
-                            //         )
-                            //     }))
-                            // }
+                            if (!systemStatus && (!emailTime || currentTime - emailTime > 60000 * 60 * 24)
+                                && currentTime - lastCheckedTime > 180000) {
+                                await Promise.all(owners.map(owner => {
+                                    return sendEmail(
+                                        { html: systemDown({ ...system._doc, owner: owner.username, message }) },
+                                        owner.email,
+                                        `${name} has been detected as down`
+                                    )
+                                }))
+                            }
+                            else if (systemStatus && emailSentStatus === false) {
+                                await Promise.all(owners.map(owner => {
+                                    return sendEmail(
+                                        { html: systemUp({ ...system._doc, owner: owner.username, message }) },
+                                        owner.email,
+                                        `${name} has been detected as up`
+                                    )
+                                }))
+                            }
+                            await System.findByIdAndUpdate(_id, { emailSent: new Date(), emailSentStatus: systemStatus }, { returnDocument: "after", useFindAndModify: false })
                         }
 
                         // Check for banner or message on the system page
