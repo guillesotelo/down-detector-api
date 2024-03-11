@@ -305,7 +305,7 @@ const dumpDbAndCleanOldRecords = async () => {
 const checkAllSystems = async () => {
     try {
         dumpDbAndCleanOldRecords()
-        const systems = await System.find({ active: true }).populate({ path: 'owners', select: '-password' })
+        const systems = await System.find({ active: true }).select('-logo -raw').populate({ path: 'owners', select: '-password' })
         if (systems && systems.length) {
             let updatedCount = 0
 
@@ -319,14 +319,14 @@ const checkAllSystems = async () => {
                     alertThreshold,
                     alertsExpiration,
                     owners,
-                    emailSent,
-                    emailSentStatus
+                    emailDate,
+                    emailStatus
                 } = system
                 const { status, firstStatus, raw, broadcastMessages, message } = await checkSystemStatus(system)
 
                 let systemStatus = status
                 let reportedlyDown = false
-                const exists = await History.find({ systemId: _id }).sort({ createdAt: -1 })
+                const exists = await History.find({ systemId: _id }).select('-raw -message -description').sort({ createdAt: -1 })
 
                 // Threshold logic
                 const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
@@ -398,39 +398,44 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
-                        // await sendEmail(
-                        //     { html: systemDown({ ...system._doc, owner: 'Guillermo Sotelo', message }) },
-                        //     'gsotelo@company.com',
-                        //     `Testing down template: ${name}`
+
+                        // if(name === 'HP Report') await sendEmail(
+                        //     { html: systemDown({ ...system._doc, owner: 'Björn Stadig', message }) },
+                        //     ['gsotelo@company.com'],
+                        //     `${name} has been detected as down`
                         // )
 
                         // Check last register and if more than 3 minutes passed, email owner(s). Send email when up again.
                         const lastCheckedTime = new Date(exists[0].createdAt || new Date()).getTime()
                         const currentTime = new Date().getTime()
-                        const emailTime = emailSent ? new Date(emailSent).getTime() : null
+                        const emailTime = emailDate ? new Date(emailDate).getTime() : null
+                        const afterThreeMinutes = currentTime - lastCheckedTime > 180000
+                        const afterOneDayEmail = !emailTime || currentTime - emailTime > 60000 * 60 * 24
 
-                        if (Array.isArray(owners)) {
+                        if (Array.isArray(owners) && owners.length && process.env.NODE_ENV === 'production') {
 
-                            if (!systemStatus && (!emailTime || currentTime - emailTime > 60000 * 60 * 24)
-                                && currentTime - lastCheckedTime > 180000) {
+                            if (!systemStatus && afterOneDayEmail && afterThreeMinutes) {
                                 await Promise.all(owners.map(owner => {
+                                    if (owner.username.includes('zhou')) return null
                                     return sendEmail(
                                         { html: systemDown({ ...system._doc, owner: owner.username, message }) },
                                         owner.email,
                                         `${name} has been detected as down`
                                     )
                                 }))
+                                await System.findByIdAndUpdate(_id, { emailDate: new Date(), emailStatus: systemStatus }, { returnDocument: "after", useFindAndModify: false })
                             }
-                            else if (systemStatus && emailSentStatus === false) {
+                            else if (systemStatus && emailDate && !emailStatus && afterThreeMinutes) {
                                 await Promise.all(owners.map(owner => {
+                                    if (owner.username.includes('zhou')) return null
                                     return sendEmail(
                                         { html: systemUp({ ...system._doc, owner: owner.username, message }) },
                                         owner.email,
                                         `${name} has been detected as up`
                                     )
                                 }))
+                                await System.findByIdAndUpdate(_id, { emailDate: new Date(), emailStatus: systemStatus }, { returnDocument: "after", useFindAndModify: false })
                             }
-                            await System.findByIdAndUpdate(_id, { emailSent: new Date(), emailSentStatus: systemStatus }, { returnDocument: "after", useFindAndModify: false })
                         }
 
                         // Check for banner or message on the system page

@@ -46,7 +46,7 @@ router.post('/create', async (req, res, next) => {
         await AppLog.create({
             username: user.username || createdBy,
             email: user.username || createdBy,
-            details: `Alert created: ${name} - ${message}`,
+            details: `Alert created: ${name || url || ''} - ${message}`,
             module: 'User Alert'
         })
 
