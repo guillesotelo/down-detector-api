@@ -2,6 +2,8 @@ const express = require('express')
 const { Config } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
+const fs = require('fs')
+require('dotenv').config();
 
 //Get all configs
 router.get('/getAll', verifyToken, async (req, res, next) => {
@@ -27,6 +29,25 @@ router.get('/getById', verifyToken, async (req, res, next) => {
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
+    }
+})
+
+//Get version date
+router.get('/getVersionDate', async (req, res, next) => {
+    try {
+        const filePath = process.env.NODE_ENV === 'development' ?
+            '/downdetector/client/build/index.html'
+            : '/home/guillermo/Documents/git/down-detector/src/constants/app.ts'
+
+        const dateCreated = fs.statSync(filePath).mtime
+        const vDate = dateCreated ? new Date(dateCreated).toLocaleString('sv-SE',
+            { year: 'numeric', month: 'numeric', day: 'numeric' }) : ''
+
+        res.status(200).json(vDate)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(200).json(new Date().toLocaleString('sv-SE',
+            { year: 'numeric', month: 'numeric', day: 'numeric' }))
     }
 })
 

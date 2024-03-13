@@ -195,8 +195,18 @@ const getSystemStatus = async (system, response) => {
                 }
             }
         }
+        else if (systemName.includes('zuul')) {
+            if (jsonResponse.length > 5) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
 
-        else if (systemName.includes('zuul')) return checkZuulStatus(system, jsonResponse)
+        // After complaints about results, page URL has changed and checkZuulStatus is no longer a good option
+        // else if (systemName.includes('zuul')) return checkZuulStatus(system, jsonResponse)
 
         else if (response.ok) {
             return {
@@ -273,6 +283,7 @@ const dumpDbAndCleanOldRecords = async () => {
             const targetPath = process.env.DB_DUMP_PATH || '/downdetector/'
             const dumpCommand = `mongodump --db ${DBName} --out ${targetPath}`
 
+            console.log(' ')
             console.log('************ Dumping DB... ************')
             await exec(dumpCommand, (err, stdout, stderr) => {
                 if (err) console.log(err)
@@ -294,6 +305,7 @@ const dumpDbAndCleanOldRecords = async () => {
                 await UserAlert.deleteMany(query).then(() => console.log('UserAlerts cleaned successfully')).catch(err => errors.push(err))
 
                 if (errors.length) {
+                    console.log(' ')
                     console.log(`************ DB Cleaned with errors (${errors.length}) ************`)
                     errors.map((error, i) => `[${i + 1}]` + console.log(error))
                 } else console.log(`************ DB Cleaned without errors ************`)
@@ -309,6 +321,7 @@ const checkAllSystems = async () => {
         if (systems && systems.length) {
             let updatedCount = 0
 
+            console.log(' ')
             console.log('************ Checking systems ************')
             const promises = systems.map(async (system) => {
                 const {
@@ -397,7 +410,6 @@ const checkAllSystems = async () => {
                         })
                     } else {
                         // Same status as last check
-
 
                         // if(name === 'HP Report') await sendEmail(
                         //     { html: systemDown({ ...system._doc, owner: 'Björn Stadig', message }) },
