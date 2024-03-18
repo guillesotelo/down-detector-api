@@ -176,27 +176,8 @@ const getSystemStatus = async (system, response) => {
                 }
             }
         }
-        else if (systemName.includes('hp developer portal')) {
-            if (jsonResponse.includes('HP Developer Portal') &&
-                jsonResponse.length > 10000) {
-                return {
-                    raw: stringJsonResponse,
-                    status: true,
-                    message: `System up and running`
-                }
-            }
-        }
         else if (systemName.includes('grafana')) {
             if (jsonResponse.length > 300) {
-                return {
-                    raw: stringJsonResponse,
-                    status: true,
-                    message: `System up and running`
-                }
-            }
-        }
-        else if (systemName.includes('zuul')) {
-            if (jsonResponse.length > 5) {
                 return {
                     raw: stringJsonResponse,
                     status: true,
