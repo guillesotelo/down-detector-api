@@ -13,8 +13,10 @@ router.get('/getAll', async (req, res, next) => {
         startDate.setHours(0, 0, 0, 0)
         const endDate = new Date()
 
-        const query = systemId ? { systemId, createdAt: { $gte: startDate, $lte: endDate } }
-            : { createdAt: { $gte: startDate, $lte: endDate } }
+        // const query = systemId ? { systemId, createdAt: { $gte: startDate, $lte: endDate } }
+        //     : { createdAt: { $gte: startDate, $lte: endDate } }
+
+        const query = systemId ? { systemId } : {}
 
         const select = `${getRaw === 'true' ? '' : '-raw'} -description`
 
