@@ -36,8 +36,8 @@ router.get('/getById', verifyToken, async (req, res, next) => {
 router.get('/getVersionDate', async (req, res, next) => {
     try {
         const filePath = process.env.NODE_ENV === 'development' ?
-            '/downdetector/client/build/index.html'
-            : '/home/guillermo/Documents/git/down-detector/src/constants/app.ts'
+            '/home/guillermo/Documents/git/down-detector/src/constants/app.ts'
+            : '/downdetector/client/build/index.html'
 
         const dateCreated = fs.statSync(filePath).mtime
         const vDate = dateCreated ? new Date(dateCreated).toLocaleString('sv-SE',
