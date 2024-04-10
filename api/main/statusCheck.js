@@ -374,11 +374,11 @@ const checkAllSystems = async () => {
                         const currentTime = new Date().getTime()
                         const emailTime = emailDate ? new Date(emailDate).getTime() : null
                         const afterThreeMinutes = currentTime - lastCheckedTime > 180000
-                        const afterOneDayEmail = !emailTime || currentTime - emailTime > 60000 * 60 * 24
+                        const notifyNewDown = !emailTime || emailStatus // This is true when system was up and now is down, so we notify again
 
                         if (Array.isArray(owners) && owners.length && process.env.NODE_ENV === 'production') {
 
-                            if (!systemStatus && afterOneDayEmail && afterThreeMinutes) {
+                            if (!systemStatus && notifyNewDown && afterThreeMinutes) {
                                 await Promise.all(owners.map(owner => {
                                     if (owner.username.includes('zhou')) return null
                                     return sendEmail(
@@ -387,7 +387,9 @@ const checkAllSystems = async () => {
                                         `${name} has been detected as down`
                                     )
                                 }))
-                                await System.findByIdAndUpdate(_id, { emailDate: new Date(), emailStatus: systemStatus }, { returnDocument: "after", useFindAndModify: false })
+                                await System.findByIdAndUpdate(_id,
+                                    { emailDate: new Date(), emailStatus: systemStatus },
+                                    { returnDocument: "after", useFindAndModify: false })
                             }
                             else if (systemStatus && emailDate && !emailStatus && afterThreeMinutes) {
                                 await Promise.all(owners.map(owner => {
@@ -398,7 +400,9 @@ const checkAllSystems = async () => {
                                         `${name} has been detected as up`
                                     )
                                 }))
-                                await System.findByIdAndUpdate(_id, { emailDate: new Date(), emailStatus: systemStatus }, { returnDocument: "after", useFindAndModify: false })
+                                await System.findByIdAndUpdate(_id,
+                                    { emailDate: new Date(), emailStatus: systemStatus },
+                                    { returnDocument: "after", useFindAndModify: false })
                             }
                         }
 
