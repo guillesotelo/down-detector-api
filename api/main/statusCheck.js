@@ -287,11 +287,20 @@ const checkAllSystems = async () => {
                     emailDate,
                     emailStatus
                 } = system
+
                 const { status, firstStatus, raw, broadcastMessages, message } = await checkSystemStatus(system)
 
                 let systemStatus = status
                 let reportedlyDown = false
                 const exists = await History.find({ systemId: _id }).select('-raw -message -description').sort({ createdAt: -1 })
+
+                // Notifications variables
+                const hasOwners = Array.isArray(owners) && owners.length
+                const lastCheckedTime = new Date(exists[0].createdAt || new Date()).getTime()
+                const currentTime = new Date().getTime()
+                const emailTime = emailDate ? new Date(emailDate).getTime() : null
+                const afterThreeMinutes = currentTime - lastCheckedTime > 180000
+                const fiveMinsFromLastEmail = emailTime ? currentTime - emailTime > 300000 : true
 
                 // Threshold logic
                 const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
@@ -328,13 +337,34 @@ const checkAllSystems = async () => {
                     // Current status is different from last check
                     if (systemStatus !== exists[0].status) {
                         updatedCount++
+
+                        let newEmailDate = emailDate
+                        let newEmailStatus = systemStatus
+
+                        if (hasOwners && process.env.NODE_ENV === 'production') {
+                            // System is UP and it was prevoisly notified as DOWN
+                            if (systemStatus && emailDate && !emailStatus) {
+                                await Promise.all(owners.map(owner => {
+                                    return sendEmail(
+                                        { html: systemUp({ ...system._doc, owner: owner.username, message }) },
+                                        owner.email,
+                                        `${name} has been detected as up`
+                                    )
+                                }))
+                                newEmailDate = new Date()
+                                newEmailStatus = systemStatus
+                            }
+                        }
+
                         await System.findByIdAndUpdate(_id,
                             {
                                 lastCheck: new Date(),
                                 lastCheckStatus: systemStatus,
                                 reportedlyDown,
                                 raw,
-                                broadcastMessages
+                                broadcastMessages,
+                                emailDate: newEmailDate,
+                                emailStatus: newEmailStatus
                             },
                             { returnDocument: "after", useFindAndModify: false })
 
@@ -363,41 +393,19 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
-                        // if(name === 'HP Report') await sendEmail(
-                        //     { html: systemDown({ ...system._doc, owner: 'Björn Stadig', message }) },
-                        //     ['gsotelo@company.com'],
-                        //     `${name} has been detected as down`
-                        // )
+                        if (hasOwners && process.env.NODE_ENV === 'production') {
 
-                        // Check last register and if more than 3 minutes passed, email owner(s). Send email when up again.
-                        const lastCheckedTime = new Date(exists[0].createdAt || new Date()).getTime()
-                        const currentTime = new Date().getTime()
-                        const emailTime = emailDate ? new Date(emailDate).getTime() : null
-                        const afterThreeMinutes = currentTime - lastCheckedTime > 180000
-                        const notifyNewDown = !emailTime || emailStatus // This is true when system was up and now is down, so we notify again
-
-                        if (Array.isArray(owners) && owners.length && process.env.NODE_ENV === 'production') {
-
-                            if (!systemStatus && notifyNewDown && afterThreeMinutes) {
+                            // System is DOWN and more than 3 minutes passed (if first time notifying) 
+                            //or 5 minutes passed from last notification
+                            if (!systemStatus
+                                && afterThreeMinutes
+                                && fiveMinsFromLastEmail
+                            ) {
                                 await Promise.all(owners.map(owner => {
-                                    if (owner.username.includes('zhou')) return null
                                     return sendEmail(
                                         { html: systemDown({ ...system._doc, owner: owner.username, message }) },
                                         owner.email,
                                         `${name} has been detected as down`
-                                    )
-                                }))
-                                await System.findByIdAndUpdate(_id,
-                                    { emailDate: new Date(), emailStatus: systemStatus },
-                                    { returnDocument: "after", useFindAndModify: false })
-                            }
-                            else if (systemStatus && emailDate && !emailStatus && afterThreeMinutes) {
-                                await Promise.all(owners.map(owner => {
-                                    if (owner.username.includes('zhou')) return null
-                                    return sendEmail(
-                                        { html: systemUp({ ...system._doc, owner: owner.username, message }) },
-                                        owner.email,
-                                        `${name} has been detected as up`
                                     )
                                 }))
                                 await System.findByIdAndUpdate(_id,

@@ -35,7 +35,7 @@ router.get('/getById', verifyToken, async (req, res, next) => {
 //Get version date
 router.get('/getVersionDate', async (req, res, next) => {
     try {
-        const filePath = process.env.NODE_ENV === 'development' ?
+        const filePath = process.env.NODE_ENV !== 'production' ?
             '/home/guillermo/Documents/git/down-detector/src/constants/app.ts'
             : '/downdetector/client/build/index.html'
 
