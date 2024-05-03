@@ -1,5 +1,14 @@
 const { downLogoBase64WLow } = require("../templates/down-logo-base64")
 
+const getDownTimeString = (totalMinutes) => {
+    if (!totalMinutes) return '3 minutes'
+    const hours = Math.floor(totalMinutes / 60) > 0 ? Math.floor(totalMinutes / 60) : 0
+    const minutes = hours ? Math.floor(((totalMinutes / 60) - hours) * 60) : totalMinutes
+    return hours ?
+        `${hours} ${hours > 1 ? 'hours' : 'hour'} and ${minutes} minutes`
+        : `${minutes} minutes`
+}
+
 const systemDown = (data) => `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" http://www.w3.org/TR/html4/loose.dtd>
 
 <html>
@@ -45,7 +54,7 @@ const systemDown = (data) => `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Trans
 
                     <p style="font-size: 20px">Hi ${data.owner},</p>
 
-                    <p style="font-size: 18px">{process.env.APP_NAME} has detected that the system ${data.name} has been consistently marked as <span style="color: red;">down</span> for over 3 minutes.</p>
+                    <p style="font-size: 18px">{process.env.APP_NAME} has detected that the system ${data.name} has been consistently marked as <span style="color: red;">down</span> for over ${getDownTimeString(data.timePassedFromDown)}.</p>
 
                     <p style="font-size: 18px;margin: 1.4rem 0 0 0;">You are receiving this message because your account is associated with this system. This is just an informational message, and no action is required from you.</p>
 

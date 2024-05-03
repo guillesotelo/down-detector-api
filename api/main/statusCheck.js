@@ -300,7 +300,8 @@ const checkAllSystems = async () => {
                 const currentTime = new Date().getTime()
                 const emailTime = emailDate ? new Date(emailDate).getTime() : null
                 const afterThreeMinutes = currentTime - lastCheckedTime > 180000
-                const fiveMinsFromLastEmail = emailTime ? currentTime - emailTime > 300000 : true
+                const halfHourFromLastEmail = emailTime ? currentTime - emailTime > 1800000 : true
+                const timePassedFromDown = emailTime ? Math.floor((currentTime - lastCheckedTime) / 1000 / 60) : null
 
                 // Threshold logic
                 const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
@@ -339,12 +340,21 @@ const checkAllSystems = async () => {
                         updatedCount++
 
                         let newEmailDate = emailDate
-                        let newEmailStatus = systemStatus
+                        let newEmailStatus = emailStatus
 
-                        if (hasOwners && process.env.NODE_ENV === 'production') {
+                        if (hasOwners
+                            // && process.env.NODE_ENV === 'production'
+                        ) {
                             // System is UP and it was prevoisly notified as DOWN
                             if (systemStatus && emailDate && !emailStatus) {
                                 await Promise.all(owners.map(owner => {
+                                    if (owner.username.toLowerCase().includes('zhou')) return null
+                                    AppLog.create({
+                                        username: 'App',
+                                        email: 'hpdevp@company.com',
+                                        details: `Sent UP notification to: ${owner.email}.`,
+                                        module: 'API'
+                                    })
                                     return sendEmail(
                                         { html: systemUp({ ...system._doc, owner: owner.username, message }) },
                                         owner.email,
@@ -393,17 +403,26 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
-                        if (hasOwners && process.env.NODE_ENV === 'production') {
+                        if (hasOwners
+                            // && process.env.NODE_ENV === 'production'
+                        ) {
 
                             // System is DOWN and more than 3 minutes passed (if first time notifying) 
                             //or 5 minutes passed from last notification
                             if (!systemStatus
                                 && afterThreeMinutes
-                                && fiveMinsFromLastEmail
+                                && halfHourFromLastEmail
                             ) {
                                 await Promise.all(owners.map(owner => {
+                                    if (owner.username.toLowerCase().includes('zhou')) return null
+                                    AppLog.create({
+                                        username: 'App',
+                                        email: 'hpdevp@company.com',
+                                        details: `Sent DOWN notification to: ${owner.email}.`,
+                                        module: 'API'
+                                    })
                                     return sendEmail(
-                                        { html: systemDown({ ...system._doc, owner: owner.username, message }) },
+                                        { html: systemDown({ ...system._doc, owner: owner.username, message, timePassedFromDown }) },
                                         owner.email,
                                         `${name} has been detected as down`
                                     )
