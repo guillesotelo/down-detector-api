@@ -383,8 +383,8 @@ const checkAllSystems = async () => {
                                 if (downtime.active) {
                                     const exists = Event.findOne({
                                         start: downtime.starts_at,
-                                        end: downtime.ends_at
-                                    })
+                                        end: downtime.ends_at,
+                                    }).exec()
 
                                     return !exists ? Event.create({
                                         systemId: _id,
@@ -453,13 +453,18 @@ const checkAllSystems = async () => {
                         if (downtimeArray && downtimeArray.length) {
                             await Promise.all(downtimeArray.map(async (downtime) => {
                                 if (downtime.active) {
-                                    return Event.create({
+                                    const exists = Event.findOne({
+                                        start: downtime.starts_at,
+                                        end: downtime.ends_at,
+                                    }).exec()
+
+                                    return !exists ? Event.create({
                                         systemId: _id,
                                         start: downtime.starts_at,
                                         end: downtime.ends_at,
                                         note: downtime.message,
                                         updatedBy: 'API'
-                                    })
+                                    }) : null
                                 } return null
                             }))
                         }
@@ -481,13 +486,18 @@ const checkAllSystems = async () => {
                     if (downtimeArray && downtimeArray.length) {
                         await Promise.all(downtimeArray.map(async (downtime) => {
                             if (downtime.active) {
-                                return Event.create({
+                                const exists = Event.findOne({
+                                    start: downtime.starts_at,
+                                    end: downtime.ends_at,
+                                }).exec()
+
+                                return !exists ? Event.create({
                                     systemId: _id,
                                     start: downtime.starts_at,
                                     end: downtime.ends_at,
                                     note: downtime.message,
                                     updatedBy: 'API'
-                                })
+                                }) : null
                             } return null
                         }))
                     }
