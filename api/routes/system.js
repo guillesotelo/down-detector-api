@@ -1,7 +1,7 @@
 const express = require('express')
 const { System, Event, History, AppLog, User } = require('../db/models')
 const { verifyToken } = require('../helpers')
-const { checkSystemStatus } = require('../main/statusCheck')
+const { checkSystemStatus, runSystemCheckLoop } = require('../main/statusCheck')
 const router = express.Router()
 
 //Get all systems
@@ -93,6 +93,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
 
         const { status } = await checkSystemStatus(newSystem)
         await History.create({ ...newSystem._doc, systemId: newSystem._id, status })
+        await runSystemCheckLoop()
 
         await AppLog.create({
             username: user.username || '',
@@ -144,18 +145,19 @@ router.post('/update', verifyToken, async (req, res, next) => {
             })
         }
 
-        const { status } = await checkSystemStatus(updatedSystem)
-        const exists = await History.find({ systemId: updatedSystem._id }).sort({ createdAt: -1 })
-        if (exists && exists.length && exists[0]._id) {
-            if (status !== exists[0].status) {
-                await History.create({
-                    systemId: updatedSystem._id,
-                    url: updatedSystem.url,
-                    status,
-                    description: updatedSystem.description
-                })
-            }
-        }
+        await runSystemCheckLoop()
+        // const { status } = await checkSystemStatus(updatedSystem)
+        // const exists = await History.find({ systemId: updatedSystem._id }).sort({ createdAt: -1 })
+        // if (exists && exists.length && exists[0]._id) {
+        //     if (status !== exists[0].status) {
+        //         await History.create({
+        //             systemId: updatedSystem._id,
+        //             url: updatedSystem.url,
+        //             status,
+        //             description: updatedSystem.description
+        //         })
+        //     }
+        // }
 
         await AppLog.create({
             username: user.username || '',
