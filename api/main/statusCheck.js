@@ -2,7 +2,7 @@ const { exec } = require("child_process")
 const dotenv = require('dotenv')
 dotenv.config()
 const { isValidUrl } = require("../helpers")
-const { System, History, AppLog, UserAlert, Event, Config } = require("../db/models")
+const { System, History, AppLog, UserAlert, Event, Config, Subscription } = require("../db/models")
 const { sendEmail } = require("../mailer")
 const { systemDown, systemUp } = require("../mailer/emailTemplates")
 let intervalId = null
@@ -211,7 +211,10 @@ const checkSystemStatus = async (system) => {
 
         return getSystemStatus(system, response)
     } catch (error) {
-        console.log(error)
+        const hostname = error?.cause?.hostname || 'Unknown hostname'
+        console.log(' ')
+        console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
+        console.log(' ')
         return {
             raw: JSON.stringify(error),
             status: false,
@@ -274,7 +277,10 @@ const checkAllSystems = async () => {
             let updatedCount = 0
 
             console.log(' ')
-            console.log('************ Checking systems ************')
+            console.log(' ')
+            console.log(' ')
+            console.log('************ Checking Systems ************')
+            console.log(' ')
             const promises = systems.map(async (system) => {
                 const {
                     _id,
@@ -289,19 +295,19 @@ const checkAllSystems = async () => {
                 } = system
 
                 const { status, firstStatus, raw, broadcastMessages, message } = await checkSystemStatus(system)
+                const subscribers = await Subscription.find({ systemId: _id })
 
                 let systemStatus = status
                 let reportedlyDown = false
                 const exists = await History.find({ systemId: _id }).select('-raw -message -description').sort({ createdAt: -1 })
 
                 // Notifications variables
-                const hasOwners = Array.isArray(owners) && owners.length
-                const lastCheckedTime = new Date(exists[0] ? exists[0].createdAt : new Date()).getTime()
+                const hasOwners = (Array.isArray(owners) && owners.length) || (Array.isArray(subscribers) && subscribers.length)
                 const currentTime = new Date().getTime()
-                const emailTime = emailDate ? new Date(emailDate).getTime() : null
+                const lastCheckedTime = new Date(exists[0] ? exists[0].createdAt : new Date()).getTime()
                 const afterThreeMinutes = currentTime - lastCheckedTime > 180000
-                const halfHourFromLastEmail = emailTime ? currentTime - emailTime > 1800000 : true
-                const timePassedFromDown = emailTime ? Math.floor((currentTime - lastCheckedTime) / 1000 / 60) : null
+                const emailTime = emailDate ? new Date(emailDate).getTime() : null
+                const halfHourFromLastEmail = emailStatus || (emailTime ? currentTime - emailTime > 1800000 : true)
 
                 // Threshold logic
                 const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
@@ -342,22 +348,40 @@ const checkAllSystems = async () => {
                         let newEmailDate = emailDate
                         let newEmailStatus = emailStatus
 
-                        if (hasOwners
-                            && process.env.NODE_ENV === 'production'
-                        ) {
-                            // System is UP and it was prevoisly notified as DOWN
-                            if (systemStatus && emailDate && !emailStatus) {
-                                await Promise.all(owners.map(owner => {
-                                    if (owner.username.toLowerCase().includes('zhou')) return null
+                        if (hasOwners) {
+                            if (name === 'SUB') {
+                                console.log(' ')
+                                console.log(' ---------- FLAG ----------- ')
+                                console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
+                                console.log('newEmailDate', newEmailDate ? new Date(newEmailDate).toLocaleString() : 'No Date')
+                                console.log('newEmailStatus', newEmailStatus || 'No Status')
+                                console.log('owners', owners.concat(subscribers || []).map(o => o.email).join(', '))
+                                console.log(' ---------- FLAG ----------- ')
+                                console.log(' ')
+                            }
+                            if (systemStatus || afterThreeMinutes) {
+                                await Promise.all(owners.concat(subscribers || []).map(owner => {
+                                    console.log(' ')
+                                    console.log(`########## Sending email to: `, owner.email)
+                                    console.log(' ')
+
+                                    const emailData = {
+                                        ...system._doc,
+                                        owner: owner.username,
+                                        message,
+                                        isSubscription: owner.isSubscription || false,
+                                        subId: owner._id,
+                                        email: owner.email || ''
+                                    }
                                     sendEmail(
-                                        { html: systemUp({ ...system._doc, owner: owner.username, message }) },
+                                        { html: systemStatus ? systemUp(emailData) : systemDown(emailData) },
                                         owner.email,
-                                        `${name} has been detected as up`
+                                        `${name} has been detected as ${systemStatus ? 'UP' : 'DOWN'}`
                                     )
                                     return AppLog.create({
                                         username: 'App',
                                         email: 'hpdevp@company.com',
-                                        details: `Sent UP notification to: ${owner.email}.`,
+                                        details: `Sent ${systemStatus ? 'UP' : 'DOWN'} notification to: ${owner.email}.`,
                                         module: 'API'
                                     })
                                 }))
@@ -408,20 +432,37 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
-                        if (hasOwners
-                            && process.env.NODE_ENV === 'production'
-                        ) {
-
+                        if (hasOwners) {
+                            if (name === 'SUB') {
+                                console.log(' ')
+                                console.log(' ---------- FLAG ----------- ')
+                                console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
+                                console.log('emailTime', new Date(emailTime).toLocaleString())
+                                console.log('lastCheckedTime', new Date(lastCheckedTime).toLocaleString())
+                                console.log('afterThreeMinutes', afterThreeMinutes)
+                                console.log('halfHourFromLastEmail', halfHourFromLastEmail)
+                                console.log(' ---------- FLAG ----------- ')
+                                console.log(' ')
+                            }
                             // System is DOWN and more than 3 minutes passed (if first time notifying) 
                             // or 5 minutes passed from last notification
                             if (!systemStatus
                                 && afterThreeMinutes
                                 && halfHourFromLastEmail
                             ) {
-                                await Promise.all(owners.map(owner => {
-                                    if (owner.username.toLowerCase().includes('zhou')) return null
+                                await Promise.all(owners.concat(subscribers || []).map(owner => {
+                                    console.log(`########## Sending email to ##########`, owner.email)
                                     sendEmail(
-                                        { html: systemDown({ ...system._doc, owner: owner.username, message, timePassedFromDown }) },
+                                        {
+                                            html: systemDown({
+                                                ...system._doc,
+                                                owner: owner.username,
+                                                message,
+                                                isSubscription: owner.isSubscription || false,
+                                                subId: owner._id,
+                                                email: owner.email || ''
+                                            })
+                                        },
                                         owner.email,
                                         `${name} has been detected as down`
                                     )
@@ -519,7 +560,9 @@ const checkAllSystems = async () => {
             updatedSystems.forEach((updated, index) => {
                 if (!updated) console.error(`Unable to update system status: ${systems[index].name}`)
             })
-            console.log(`[${new Date().toLocaleString()}] System status updated: ${updatedCount}`)
+            console.log(' ')
+            console.log(`[${new Date().toLocaleString()}] Checking completed. System status updated: ${updatedCount}`)  
+            console.log(' ')
             // if (updatedCount) {
             //     await AppLog.create({
             //         username: 'App',
@@ -538,9 +581,15 @@ const runSystemCheckLoop = async (interval) => {
     try {
         clearInterval(intervalId)
         await checkAllSystems()
-        intervalId = setInterval(checkAllSystems, interval || 600000)
+        intervalId = setInterval(async () => {
+            try {
+                await checkAllSystems()
+            } catch (error) {
+                console.error('Error in runSystemCheckLoop():', error)
+            }
+        }, interval || 600000) // 1 minute
     } catch (error) {
-        console.error('Error running system check:', error)
+        console.error('Error in runSystemCheckLoop() [2]:', error)
     }
 }
 
