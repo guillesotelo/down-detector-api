@@ -359,7 +359,7 @@ const checkAllSystems = async () => {
                                 console.log(' ---------- FLAG ----------- ')
                                 console.log(' ')
                             }
-                            if (systemStatus || afterThreeMinutes) {
+                            if (!emailStatus !== systemStatus || (!systemStatus && afterThreeMinutes)) {
                                 await Promise.all(owners.concat(subscribers || []).map(owner => {
                                     console.log(' ')
                                     console.log(`########## Sending email to: `, owner.email)
