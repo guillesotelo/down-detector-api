@@ -5,7 +5,10 @@ const { isValidUrl } = require("../helpers")
 const { System, History, AppLog, UserAlert, Event, Config, Subscription } = require("../db/models")
 const { sendEmail } = require("../mailer")
 const { systemDown, systemUp } = require("../mailer/emailTemplates")
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 let intervalId = null
+let checkIndex = 1
+
 const zuul_events = [
     "ad-zen-gerrit",
     "artadfsp-gerrit",
@@ -26,8 +29,6 @@ const zuul_events = [
     "spas-gerrit",
     "vs-gerrit"
 ]
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-let checkIndex = 1
 
 const checkZuulStatus = (system, json) => {
     let check = true
@@ -202,7 +203,7 @@ const checkSystemStatus = async (system) => {
         }
 
         const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), timeout || 10000)
+        const timeoutId = setTimeout(() => controller.abort(), timeout && timeout <= 10000 ? timeout : 10000)
         const response = await fetch(url, { signal: controller.signal })
         clearTimeout(timeoutId)
 
@@ -211,9 +212,10 @@ const checkSystemStatus = async (system) => {
 
         return getSystemStatus(system, response)
     } catch (error) {
-        const hostname = error?.cause?.hostname || 'Unknown hostname'
+        const hostname = error?.cause?.hostname || ''
         console.log(' ')
-        console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
+        if (hostname) console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
+        else console.error(error)
         console.log(' ')
         return {
             raw: JSON.stringify(error),
@@ -291,7 +293,7 @@ const checkAllSystems = async () => {
                     alertsExpiration,
                     owners,
                     emailDate,
-                    emailStatus
+                    emailedStatus
                 } = system
 
                 const { status, firstStatus, raw, broadcastMessages, message } = await checkSystemStatus(system)
@@ -304,10 +306,10 @@ const checkAllSystems = async () => {
                 // Notifications variables
                 const hasOwners = (Array.isArray(owners) && owners.length) || (Array.isArray(subscribers) && subscribers.length)
                 const currentTime = new Date().getTime()
-                const lastCheckedTime = new Date(exists[0] ? exists[0].createdAt : new Date()).getTime()
-                const afterThreeMinutes = currentTime - lastCheckedTime > 180000
+                const lastCheckedTime = new Date(exists[0] ? new Date(exists[0].createdAt || new Date()).getTime() : new Date()).getTime()
+                const threeMinutesDown = currentTime - lastCheckedTime > 180000
                 const emailTime = emailDate ? new Date(emailDate).getTime() : null
-                const halfHourFromLastEmail = emailStatus || (emailTime ? currentTime - emailTime > 1800000 : true)
+                const hourFromLastEmail = emailTime ? currentTime - emailTime > 3600000 : true
 
                 // Threshold logic
                 const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
@@ -346,20 +348,25 @@ const checkAllSystems = async () => {
                         updatedCount++
 
                         let newEmailDate = emailDate
-                        let newEmailStatus = emailStatus
+                        let newEmailedStatus = emailedStatus === false || emailedStatus === true ? emailedStatus : null
 
                         if (hasOwners) {
-                            if (name === 'SUB') {
+                            if (name === 'TEST') {
                                 console.log(' ')
-                                console.log(' ---------- FLAG ----------- ')
+                                console.log(' ---------- FLAG [1] ----------- ')
                                 console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
                                 console.log('newEmailDate', newEmailDate ? new Date(newEmailDate).toLocaleString() : 'No Date')
-                                console.log('newEmailStatus', newEmailStatus || 'No Status')
+                                console.log('newEmailedStatus', newEmailedStatus)
                                 console.log('owners', owners.concat(subscribers || []).map(o => o.email).join(', '))
                                 console.log(' ---------- FLAG ----------- ')
                                 console.log(' ')
                             }
-                            if (!emailStatus !== systemStatus || (!systemStatus && afterThreeMinutes)) {
+                            // if DOWN -> threeMinutesDown must be true
+                            //         -> newEmailedStatus must be true or null
+                            //         -> hourFromLastEmail must be true
+                            // if UP -> we send the email regardless of variables
+                            if ((!systemStatus && threeMinutesDown && (newEmailedStatus || newEmailedStatus === null) && hourFromLastEmail)
+                                || (systemStatus)) {
                                 await Promise.all(owners.concat(subscribers || []).map(owner => {
                                     console.log(' ')
                                     console.log(`########## Sending email to: `, owner.email)
@@ -385,8 +392,8 @@ const checkAllSystems = async () => {
                                         module: 'API'
                                     })
                                 }))
-                                newEmailDate = new Date()
-                                newEmailStatus = systemStatus
+                                newEmailDate = systemStatus ? null : new Date()
+                                newEmailedStatus = systemStatus
                             }
                         }
 
@@ -398,7 +405,7 @@ const checkAllSystems = async () => {
                                 raw,
                                 broadcastMessages,
                                 emailDate: newEmailDate,
-                                emailStatus: newEmailStatus
+                                emailedStatus: newEmailedStatus
                             },
                             { returnDocument: "after", useFindAndModify: false })
 
@@ -433,23 +440,26 @@ const checkAllSystems = async () => {
                         // Same status as last check
 
                         if (hasOwners) {
-                            if (name === 'SUB') {
+                            if (name === 'TEST') {
                                 console.log(' ')
-                                console.log(' ---------- FLAG ----------- ')
+                                console.log(' ---------- FLAG [2] ----------- ')
                                 console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
                                 console.log('emailTime', new Date(emailTime).toLocaleString())
                                 console.log('lastCheckedTime', new Date(lastCheckedTime).toLocaleString())
-                                console.log('afterThreeMinutes', afterThreeMinutes)
-                                console.log('halfHourFromLastEmail', halfHourFromLastEmail)
+                                console.log('threeMinutesDown', threeMinutesDown)
+                                console.log('hourFromLastEmail', hourFromLastEmail)
                                 console.log(' ---------- FLAG ----------- ')
                                 console.log(' ')
                             }
                             // System is DOWN and more than 3 minutes passed (if first time notifying) 
                             // or 5 minutes passed from last notification
+
+                            // if DOWN -> hourFromLastEmail must be true
+                            //         -> threeMinutesDown must be true
+                            // if UP   -> we dont send anything
                             if (!systemStatus
-                                && afterThreeMinutes
-                                && halfHourFromLastEmail
-                            ) {
+                                && threeMinutesDown
+                                && hourFromLastEmail) {
                                 await Promise.all(owners.concat(subscribers || []).map(owner => {
                                     console.log(`########## Sending email to ##########`, owner.email)
                                     sendEmail(
@@ -474,7 +484,14 @@ const checkAllSystems = async () => {
                                     })
                                 }))
                                 await System.findByIdAndUpdate(_id,
-                                    { emailDate: new Date(), emailStatus: systemStatus },
+                                    {
+                                        lastCheck: new Date(),
+                                        lastCheckStatus: systemStatus,
+                                        reportedlyDown,
+                                        raw,
+                                        emailDate: new Date(),
+                                        emailedStatus: systemStatus
+                                    },
                                     { returnDocument: "after", useFindAndModify: false })
                             }
                         }
@@ -483,7 +500,6 @@ const checkAllSystems = async () => {
                         if (broadcastMessages && broadcastMessages !== '[]') {
                             await System.findByIdAndUpdate(_id,
                                 {
-                                    lastCheck: new Date(),
                                     lastCheckStatus: systemStatus,
                                     reportedlyDown,
                                     raw,
@@ -561,7 +577,7 @@ const checkAllSystems = async () => {
                 if (!updated) console.error(`Unable to update system status: ${systems[index].name}`)
             })
             console.log(' ')
-            console.log(`[${new Date().toLocaleString()}] Checking completed. System status updated: ${updatedCount}`)  
+            console.log(`[${new Date().toLocaleString()}] Checking completed. System status updated: ${updatedCount}`)
             console.log(' ')
             // if (updatedCount) {
             //     await AppLog.create({
@@ -587,7 +603,7 @@ const runSystemCheckLoop = async (interval) => {
             } catch (error) {
                 console.error('Error in runSystemCheckLoop():', error)
             }
-        }, interval || 600000) // 1 minute
+        }, interval || 60000) // 1 minute
     } catch (error) {
         console.error('Error in runSystemCheckLoop() [2]:', error)
     }
