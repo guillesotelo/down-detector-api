@@ -81,7 +81,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
 })
 
 //Remove subscription
-router.post('/remove', verifyToken, async (req, res, next) => {
+router.post('/remove', async (req, res, next) => {
     try {
         const { _id, systemId, user } = req.body
         const subscription = await Subscription.findById(_id)
