@@ -189,39 +189,53 @@ const getSystemStatus = async (system, response) => {
     }
 }
 
+let hostNameError = null
 const checkSystemStatus = async (system) => {
-    try {
-        const { url, timeout, name, broadcastMessages } = system
+    const { url, timeout, name, broadcastMessages } = system
+    const maxRetries = 2
+    let attempts = 0
 
-        if (!isValidUrl(url)) {
-            return {
-                raw: '{}',
-                status: false,
-                message: `URL not valid: "${url}"`,
-                broadcastMessages: broadcastMessages || '[]'
+    while (attempts < maxRetries) {
+        try {
+            if (!isValidUrl(url)) {
+                return {
+                    raw: '{}',
+                    status: false,
+                    message: `URL not valid: "${url}"`,
+                    broadcastMessages: broadcastMessages || '[]'
+                }
             }
-        }
 
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), timeout && timeout <= 10000 ? timeout : 10000)
-        const response = await fetch(url, { signal: controller.signal })
-        clearTimeout(timeoutId)
+            hostNameError = url
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), timeout && timeout <= 10000 ? timeout : 10000)
+            const response = await fetch(url, { signal: controller.signal })
+            clearTimeout(timeoutId)
 
-        console.log(`[${checkIndex}]`, name)
-        checkIndex += 1
+            console.log(`[${checkIndex}]`, name)
+            checkIndex += 1
+            hostNameError = null
 
-        return getSystemStatus(system, response)
-    } catch (error) {
-        const hostname = error?.cause?.hostname || ''
-        console.log(' ')
-        if (hostname) console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
-        else console.error(error)
-        console.log(' ')
-        return {
-            raw: JSON.stringify(error),
-            status: false,
-            message: `Unexpected error: ${error}`,
-            broadcastMessages: '[]'
+            return getSystemStatus(system, response)
+
+        } catch (error) {
+            const hostname = error?.cause?.hostname || hostNameError
+            hostNameError = null
+            checkIndex += 1
+            attempts += 1
+
+            console.log(' ')
+            if (hostname) console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
+            console.log(' ')
+
+            if (attempts >= maxRetries) {
+                return {
+                    raw: JSON.stringify(error),
+                    status: false,
+                    message: `Unexpected error after ${attempts} attempts: ${error}`,
+                    broadcastMessages: '[]'
+                };
+            }
         }
     }
 }
@@ -307,9 +321,9 @@ const checkAllSystems = async () => {
                 const hasOwners = (Array.isArray(owners) && owners.length) || (Array.isArray(subscribers) && subscribers.length)
                 const currentTime = new Date().getTime()
                 const lastCheckedTime = new Date(exists[0] ? new Date(exists[0].createdAt || new Date()).getTime() : new Date()).getTime()
-                const threeMinutesDown = currentTime - lastCheckedTime > 180000
+                const threeMinutesDown = currentTime - lastCheckedTime > 210000 // 3.5 minutes
                 const emailTime = emailDate ? new Date(emailDate).getTime() : null
-                const hourFromLastEmail = emailTime ? currentTime - emailTime > 3600000 : true
+                const hourFromLastEmail = emailTime ? currentTime - emailTime > 3600000 : true // true if no email was sent (first timers)
 
                 // Threshold logic
                 const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
@@ -350,23 +364,25 @@ const checkAllSystems = async () => {
                         let newEmailDate = emailDate
                         let newEmailedStatus = emailedStatus === false || emailedStatus === true ? emailedStatus : null
 
+                        if (name === 'TEST') {
+                            console.log(' ')
+                            console.log(' ---------- FLAG [1] ----------- ')
+                            console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
+                            console.log('threeMinutesDown', threeMinutesDown)
+                            console.log('hourFromLastEmail', hourFromLastEmail)
+                            console.log('newEmailDate', newEmailDate ? new Date(newEmailDate).toLocaleString() : 'No Date')
+                            console.log('newEmailedStatus', newEmailedStatus)
+                            console.log('owners', owners.concat(subscribers || []).map(o => o.email).join(', '))
+                            console.log(' ---------- FLAG ----------- ')
+                            console.log(' ')
+                        }
                         if (hasOwners) {
-                            if (name === 'TEST') {
-                                console.log(' ')
-                                console.log(' ---------- FLAG [1] ----------- ')
-                                console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
-                                console.log('newEmailDate', newEmailDate ? new Date(newEmailDate).toLocaleString() : 'No Date')
-                                console.log('newEmailedStatus', newEmailedStatus)
-                                console.log('owners', owners.concat(subscribers || []).map(o => o.email).join(', '))
-                                console.log(' ---------- FLAG ----------- ')
-                                console.log(' ')
-                            }
                             // if DOWN -> threeMinutesDown must be true
                             //         -> newEmailedStatus must be true or null
                             //         -> hourFromLastEmail must be true
                             // if UP -> we send the email regardless of variables
                             if ((!systemStatus && threeMinutesDown && (newEmailedStatus || newEmailedStatus === null) && hourFromLastEmail)
-                                || (systemStatus)) {
+                                || (systemStatus && threeMinutesDown)) {
                                 await Promise.all(owners.concat(subscribers || []).map(owner => {
                                     console.log(' ')
                                     console.log(`########## Sending email to: `, owner.email)
@@ -392,7 +408,7 @@ const checkAllSystems = async () => {
                                         module: 'API'
                                     })
                                 }))
-                                newEmailDate = systemStatus ? null : new Date()
+                                newEmailDate = new Date()
                                 newEmailedStatus = systemStatus
                             }
                         }
@@ -439,18 +455,20 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
+                        if (name === 'TEST') {
+                            console.log(' ')
+                            console.log(' ---------- FLAG [2] ----------- ')
+                            console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
+                            console.log('emailTime', emailTime ? new Date(emailTime).toLocaleString() : 'No Date')
+                            console.log('lastCheckedTime', new Date(lastCheckedTime).toLocaleString())
+                            console.log('threeMinutesDown', threeMinutesDown)
+                            console.log('hourFromLastEmail', hourFromLastEmail)
+                            console.log('emailDate', emailDate ? new Date(emailDate).toLocaleString() : 'No Date')
+                            console.log('emailedStatus', emailedStatus)
+                            console.log(' ---------- FLAG ----------- ')
+                            console.log(' ')
+                        }
                         if (hasOwners) {
-                            if (name === 'TEST') {
-                                console.log(' ')
-                                console.log(' ---------- FLAG [2] ----------- ')
-                                console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
-                                console.log('emailTime', new Date(emailTime).toLocaleString())
-                                console.log('lastCheckedTime', new Date(lastCheckedTime).toLocaleString())
-                                console.log('threeMinutesDown', threeMinutesDown)
-                                console.log('hourFromLastEmail', hourFromLastEmail)
-                                console.log(' ---------- FLAG ----------- ')
-                                console.log(' ')
-                            }
                             // System is DOWN and more than 3 minutes passed (if first time notifying) 
                             // or 5 minutes passed from last notification
 

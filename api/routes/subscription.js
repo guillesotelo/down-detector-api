@@ -1,5 +1,5 @@
 const express = require('express')
-const { Subscription, AppLog } = require('../db/models')
+const { Subscription, AppLog, System } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const { runSystemCheckLoop } = require('../main/statusCheck')
 const router = express.Router()
@@ -37,11 +37,26 @@ router.get('/getById', async (req, res, next) => {
 //Create new subscription
 router.post('/create', async (req, res, next) => {
     try {
-        const { username, email, name, user } = req.body
-        const newsubScription = await Subscription.create(req.body)
+        const { username, email, name, user, isOwner, systemId } = req.body
+        let newsubScription = null
+
+        if (isOwner) {
+            const system = await System.findById(systemId)
+            if (system) {
+                const unsubscriptions = JSON.parse(system.unsubscriptions || '[]')
+                const index = unsubscriptions.indexOf(email)
+                if (index > -1) unsubscriptions.splice(index, 1)
+                
+                system.unsubscriptions = JSON.stringify(unsubscriptions)
+                system.save()
+            }
+            newsubScription = true
+        } else {
+            newsubScription = await Subscription.create(req.body)
+        }
         if (!newsubScription) return res.status(400).json('Error creating Subscription')
 
-            await runSystemCheckLoop()
+        await runSystemCheckLoop()
 
         await AppLog.create({
             username: user.username || username,
@@ -83,10 +98,20 @@ router.post('/update', verifyToken, async (req, res, next) => {
 //Remove subscription
 router.post('/remove', async (req, res, next) => {
     try {
-        const { _id, systemId, user } = req.body
+        const { _id, systemId, user, username, email } = req.body
         const subscription = await Subscription.findById(_id)
 
         await Subscription.deleteOne({ _id, systemId })
+
+        if (username && email) {
+            // Is owner
+            const system = await System.findById(systemId)
+            if (system) {
+                const unsubscriptions = JSON.parse(system.unsubscriptions || '[]')
+                system.unsubscriptions = JSON.stringify(unsubscriptions.concat(email))
+                system.save()
+            }
+        }
 
         await AppLog.create({
             username: user.username || subscription.username || 'anonymous',
