@@ -364,7 +364,7 @@ const checkAllSystems = async () => {
                         let newEmailDate = emailDate
                         let newEmailedStatus = emailedStatus === false || emailedStatus === true ? emailedStatus : null
 
-                        if (name === 'TEST') {
+                        if (name === 'HP Report') {
                             console.log(' ')
                             console.log(' ---------- FLAG [1] ----------- ')
                             console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
@@ -376,7 +376,7 @@ const checkAllSystems = async () => {
                             console.log(' ---------- FLAG ----------- ')
                             console.log(' ')
                         }
-                        if (hasOwners) {
+                        if (hasOwners && name === 'HP Report') {
                             // if DOWN -> threeMinutesDown must be true
                             //         -> newEmailedStatus must be true or null
                             //         -> hourFromLastEmail must be true
@@ -455,7 +455,7 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
-                        if (name === 'TEST') {
+                        if (name === 'HP Report') {
                             console.log(' ')
                             console.log(' ---------- FLAG [2] ----------- ')
                             console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
@@ -468,7 +468,7 @@ const checkAllSystems = async () => {
                             console.log(' ---------- FLAG ----------- ')
                             console.log(' ')
                         }
-                        if (hasOwners) {
+                        if (hasOwners && name === 'HP Report') {
                             // System is DOWN and more than 3 minutes passed (if first time notifying) 
                             // or 5 minutes passed from last notification
 
