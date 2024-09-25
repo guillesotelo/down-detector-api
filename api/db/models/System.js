@@ -32,6 +32,9 @@ const systemSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
+    unsubscriptions: {
+        type: String
+    },
     createdBy: {
         type: String
     },
