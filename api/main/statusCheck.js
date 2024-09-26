@@ -321,9 +321,9 @@ const checkAllSystems = async () => {
                 const hasOwners = (Array.isArray(owners) && owners.length) || (Array.isArray(subscribers) && subscribers.length)
                 const currentTime = new Date().getTime()
                 const lastCheckedTime = new Date(exists[0] ? new Date(exists[0].createdAt || new Date()).getTime() : new Date()).getTime()
-                const threeMinutesDown = currentTime - lastCheckedTime > 210000 // 3.5 minutes
+                const threeMinutesDown = currentTime - lastCheckedTime > 180000 && !exists[0].status
                 const emailTime = emailDate ? new Date(emailDate).getTime() : null
-                const hourFromLastEmail = emailTime ? currentTime - emailTime > 3600000 : true // true if no email was sent (first timers)
+                const hourFromLastEmail = emailedStatus || (emailTime ? currentTime - emailTime > 3600000 : true) || false // true if no email was sent (first timers)
 
                 // Threshold logic
                 const alerts = await UserAlert.find({ systemId: _id }).sort({ createdAt: -1 })
@@ -364,25 +364,30 @@ const checkAllSystems = async () => {
                         let newEmailDate = emailDate
                         let newEmailedStatus = emailedStatus === false || emailedStatus === true ? emailedStatus : null
 
-                        if (name === 'HP Report') {
+                        if (name === 'TEST' || name === 'HP Report') {
+                            console.log(' ')
                             console.log(' ')
                             console.log(' ---------- FLAG [1] ----------- ')
-                            console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
-                            console.log('threeMinutesDown', threeMinutesDown)
-                            console.log('hourFromLastEmail', hourFromLastEmail)
-                            console.log('newEmailDate', newEmailDate ? new Date(newEmailDate).toLocaleString() : 'No Date')
-                            console.log('newEmailedStatus', newEmailedStatus)
-                            console.log('owners', owners.concat(subscribers || []).map(o => o.email).join(', '))
-                            console.log(' ---------- FLAG ----------- ')
+                            console.log('System: ', name)
+                            console.log('Status: ', `${systemStatus ? '\x1b[32m' + 'UP' : '\x1b[31m' + 'DOWN'}\x1b[0m`)
+                            console.log('lastCheckedTime: ', new Date(lastCheckedTime).toLocaleString())
+                            console.log('lastCheckedStatus: ', `${exists[0].status ? '\x1b[32m' + 'UP' : '\x1b[31m' + 'DOWN'}\x1b[0m`)
+                            console.log('threeMinutesDown: ', threeMinutesDown)
+                            console.log('hourFromLastEmail :', hourFromLastEmail)
+                            console.log('newEmailDate: ', newEmailDate ? new Date(newEmailDate).toLocaleString() : 'No Date')
+                            console.log('newEmailedStatus: ', newEmailedStatus)
+                            console.log('owners: ', owners.concat(subscribers || []).map(o => o.email).join(', '))
+                            console.log(' ---------- FLAG [1] ----------- ')
+                            console.log(' ')
                             console.log(' ')
                         }
-                        if (hasOwners && name === 'HP Report') {
+                        if (hasOwners) {
                             // if DOWN -> threeMinutesDown must be true
                             //         -> newEmailedStatus must be true or null
                             //         -> hourFromLastEmail must be true
                             // if UP -> we send the email regardless of variables
                             if ((!systemStatus && threeMinutesDown && (newEmailedStatus || newEmailedStatus === null) && hourFromLastEmail)
-                                || (systemStatus && threeMinutesDown)) {
+                                || (systemStatus && emailedStatus === false)) {
                                 await Promise.all(owners.concat(subscribers || []).map(owner => {
                                     console.log(' ')
                                     console.log(`########## Sending email to: `, owner.email)
@@ -455,20 +460,25 @@ const checkAllSystems = async () => {
                     } else {
                         // Same status as last check
 
-                        if (name === 'HP Report') {
+                        if (name === 'TEST' || name === 'HP Report') {
+                            console.log(' ')
                             console.log(' ')
                             console.log(' ---------- FLAG [2] ----------- ')
-                            console.log('STATUS', systemStatus ? 'UP' : 'DOWN')
-                            console.log('emailTime', emailTime ? new Date(emailTime).toLocaleString() : 'No Date')
-                            console.log('lastCheckedTime', new Date(lastCheckedTime).toLocaleString())
-                            console.log('threeMinutesDown', threeMinutesDown)
-                            console.log('hourFromLastEmail', hourFromLastEmail)
-                            console.log('emailDate', emailDate ? new Date(emailDate).toLocaleString() : 'No Date')
-                            console.log('emailedStatus', emailedStatus)
-                            console.log(' ---------- FLAG ----------- ')
+                            console.log('System: ', name)
+                            console.log('Status: ', `${systemStatus ? '\x1b[32m' + 'UP' : '\x1b[31m' + 'DOWN'}\x1b[0m`)
+                            console.log('lastCheckedTime: ', new Date(lastCheckedTime).toLocaleString())
+                            console.log('lastCheckedStatus: ', `${exists[0].status ? '\x1b[32m' + 'UP' : '\x1b[31m' + 'DOWN'}\x1b[0m`)
+                            console.log('threeMinutesDown: ', threeMinutesDown)
+                            console.log('hourFromLastEmail: ', hourFromLastEmail)
+                            console.log('emailDate: ', emailDate ? new Date(emailDate).toLocaleString() : 'No Date')
+                            console.log('emailTime: ', emailTime ? new Date(emailTime).toLocaleString() : 'No Date')
+                            console.log('emailedStatus: ', emailedStatus)
+                            console.log('owners: ', owners.concat(subscribers || []).map(o => o.email).join(', '))
+                            console.log(' ---------- FLAG [2] ----------- ')
+                            console.log(' ')
                             console.log(' ')
                         }
-                        if (hasOwners && name === 'HP Report') {
+                        if (hasOwners) {
                             // System is DOWN and more than 3 minutes passed (if first time notifying) 
                             // or 5 minutes passed from last notification
 
