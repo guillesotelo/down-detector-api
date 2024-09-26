@@ -78,7 +78,7 @@ const systemSchema = new mongoose.Schema({
     emailDate: {
         type: Date,
     },
-    emailStatus: {
+    emailedStatus: {
         type: Boolean,
     }
 }, { timestamps: true })
