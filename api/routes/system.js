@@ -36,12 +36,15 @@ router.get('/getActive', async (req, res, next) => {
 })
 
 //Get logos
-router.get('/getLogosAndRaw', async (req, res, next) => {
+router.get('/getData', async (req, res, next) => {
     try {
-        const logos = await System.find().select('_id logo raw')
-        if (!logos || !logos.length) return res.status(200).send('No logos found')
+        const { dataSelect } = req.query
+        if (dataSelect) {
+            const systemData = await System.find().select(dataSelect)
+            if (!systemData || !systemData.length) return res.status(200).send('No system data found')
 
-        res.status(200).json(logos)
+            res.status(200).json(systemData)
+        }
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
