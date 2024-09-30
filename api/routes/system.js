@@ -25,7 +25,7 @@ router.get('/getAll', async (req, res, next) => {
 //Get active systems
 router.get('/getActive', async (req, res, next) => {
     try {
-        const systems = await System.find({ active: true }).sort({ createdAt: -1 })
+        const systems = await System.find({ active: true }).select('-raw -logo').sort({ createdAt: -1 })
         if (!systems || !systems.length) return res.status(200).send('No systems found')
 
         res.status(200).json(systems)
@@ -35,6 +35,18 @@ router.get('/getActive', async (req, res, next) => {
     }
 })
 
+//Get logos
+router.get('/getLogosAndRaw', async (req, res, next) => {
+    try {
+        const logos = await System.find().select('_id logo raw')
+        if (!logos || !logos.length) return res.status(200).send('No logos found')
+
+        res.status(200).json(logos)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
 
 //Get system by ID
 router.get('/getAllByOwnerId', async (req, res, next) => {
