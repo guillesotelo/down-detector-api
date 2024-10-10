@@ -105,19 +105,17 @@ router.post('/create', verifyToken, async (req, res, next) => {
                 if (!updated) console.error(`Unable to save downtime data: ${JSON.stringify(downtimeArray[index])}`)
             })
         }
-
-        const { status } = await checkSystemStatus(newSystem)
-        await History.create({ ...newSystem._doc, systemId: newSystem._id, status })
-        await runSystemCheckLoop()
-
+        
         await AppLog.create({
             username: user.username || '',
             email: user.email || '',
             details: `System created: ${newSystem.name} - ${newSystem.url}`,
             module: 'System'
         })
-
+        
         res.status(201).json(newSystem)
+        
+        await runSystemCheckLoop()
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -160,20 +158,6 @@ router.post('/update', verifyToken, async (req, res, next) => {
             })
         }
 
-        await runSystemCheckLoop()
-        // const { status } = await checkSystemStatus(updatedSystem)
-        // const exists = await History.find({ systemId: updatedSystem._id }).sort({ createdAt: -1 })
-        // if (exists && exists.length && exists[0]._id) {
-        //     if (status !== exists[0].status) {
-        //         await History.create({
-        //             systemId: updatedSystem._id,
-        //             url: updatedSystem.url,
-        //             status,
-        //             description: updatedSystem.description
-        //         })
-        //     }
-        // }
-
         await AppLog.create({
             username: user.username || '',
             email: user.email || '',
@@ -182,8 +166,10 @@ router.post('/update', verifyToken, async (req, res, next) => {
         })
 
         const populatedSystem = await System.findById(updatedSystem._id).populate('owners')
-
+        
         res.status(200).json(populatedSystem)
+        
+        await runSystemCheckLoop()
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
