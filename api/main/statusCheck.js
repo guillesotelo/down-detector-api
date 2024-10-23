@@ -208,7 +208,7 @@ const checkSystemStatus = async (system) => {
 
             hostNameError = url
             const controller = new AbortController()
-            const timeoutId = setTimeout(() => controller.abort(), timeout && timeout <= 10000 ? timeout : 10000)
+            const timeoutId = setTimeout(() => controller.abort(), timeout && typeof timeout === 'number' ? timeout : 10000)
             const response = await fetch(url, { signal: controller.signal })
             clearTimeout(timeoutId)
 
