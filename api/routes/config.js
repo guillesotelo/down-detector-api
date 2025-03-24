@@ -3,6 +3,7 @@ const { Config } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
 const fs = require('fs')
+const { sendEmail } = require('../mailer')
 require('dotenv').config();
 
 //Get all configs
@@ -91,6 +92,25 @@ router.post('/remove', verifyToken, async (req, res, next) => {
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
+    }
+})
+
+
+// Mailing testing route
+router.get('/test_emails', async (req, res) => {
+    try {
+        const { receiver } = req.query
+        if (receiver) {
+            console.log(`*** Sending test email to: ${receiver}***`)
+            const tData = await sendEmail(
+                { html: 'Hi, <br/><br/>You are receiving this email because the system is testing email receivers.<br/><br/>Kind regards,<br/>Stargate Team' },
+                receiver || '',
+                'THIS IS A TEST EMAIL'
+            )
+            if (tData) console.log(`*** Successfully sent email to: ${receiver}***`)
+        }
+    } catch (error) {
+        console.error('Error on testing mailer route: ', error)
     }
 })
 
