@@ -14,7 +14,7 @@ const transporter = nodemailer.createTransport({
 // })
 
 const sendEmail = async (data, to, subject) => {
-  await transporter.sendMail({
+  const tData = await transporter.sendMail({
     from: `"{process.env.APP_NAME}" <hpdevp@company.com>`,
     to,
     subject,
@@ -22,6 +22,11 @@ const sendEmail = async (data, to, subject) => {
   }).catch((err) => {
     console.error('Nodemailer (Send) error', err)
   })
+
+  if (tData) {
+    console.log(`*** Mail sent successfully: `, String(tData))
+    return tData
+  }
 }
 
 module.exports = {
