@@ -79,6 +79,7 @@ const getSystemStatus = async (system, response) => {
         let newBroadcast = broadcastMessages || '[]'
         const contentType = response.headers.get('content-type')
         const textResponse = await response.text()
+
         if (contentType && contentType.includes('application/json')) {
             const jsonpPrefix = ')]}\''
             if (textResponse.startsWith(jsonpPrefix)) {
@@ -150,6 +151,16 @@ const getSystemStatus = async (system, response) => {
         }
         else if (systemName.includes('hp report')) {
             if (jsonResponse.includes('HP Software Platform')) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
+
+        else if (systemName.includes('Veronica')) {
+            if (stringJsonResponse.includes('model_name')) {
                 return {
                     raw: stringJsonResponse,
                     status: true,
