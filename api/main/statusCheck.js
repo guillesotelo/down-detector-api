@@ -160,7 +160,10 @@ const getSystemStatus = async (system, response) => {
         }
 
         else if (systemName.includes('Veronica')) {
-            if (stringJsonResponse.includes('model_name')) {
+            const hours = new Date().getHours()
+            const minutes = new Date().getMinutes()
+            const isIngesting = (hours === 6 && minutes >= 45) || (hours === 7 && minutes <= 15)
+            if (stringJsonResponse.includes('model_name') || isIngesting) {
                 return {
                     raw: stringJsonResponse,
                     status: true,
