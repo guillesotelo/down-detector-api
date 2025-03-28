@@ -242,13 +242,26 @@ const checkSystemStatus = async (system) => {
             if (hostname) console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
             console.log(' ')
 
+            // Excemption for Veronica
+            const hours = new Date().getHours()
+            const minutes = new Date().getMinutes()
+            const isIngesting = (hours === 6 && minutes >= 45) || (hours === 7 && minutes <= 15)
+            if(hostname && String(hostname).includes('hpchatbot') && isIngesting) {
+                return {
+                    raw: JSON.stringify(error),
+                    status: true,
+                    message: `Ingest automation in progress`,
+                    broadcastMessages: '[]'
+                }
+            }
+
             if (attempts >= maxRetries) {
                 return {
                     raw: JSON.stringify(error),
                     status: false,
                     message: `Unexpected error after ${attempts} attempts: ${error}`,
                     broadcastMessages: '[]'
-                };
+                }
             }
         }
     }
