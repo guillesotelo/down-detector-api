@@ -161,8 +161,7 @@ const getSystemStatus = async (system, response) => {
 
         else if (systemName.includes('Veronica')) {
             const hours = new Date().getHours()
-            const minutes = new Date().getMinutes()
-            const isIngesting = (hours === 6 && minutes >= 30) || (hours === 7 && minutes <= 30)
+            const isIngesting = (hours >= 6 && hours <= 8)
             if (stringJsonResponse.includes('model_name') || isIngesting) {
                 return {
                     raw: stringJsonResponse,
@@ -244,8 +243,7 @@ const checkSystemStatus = async (system) => {
 
             // Excemption for Veronica
             const hours = new Date().getHours()
-            const minutes = new Date().getMinutes()
-            const isIngesting = (hours === 6 && minutes >= 30) || (hours === 7 && minutes <= 30)
+            const isIngesting = (hours >= 6 && hours <= 8)
             if(hostname && String(hostname).includes('hpchatbot') && isIngesting) {
                 return {
                     raw: JSON.stringify(error),
