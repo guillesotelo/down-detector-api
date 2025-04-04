@@ -159,9 +159,9 @@ const getSystemStatus = async (system, response) => {
             }
         }
 
-        else if (systemName.includes('Veronica')) {
+        else if (systemName.includes('veronica')) {
             const hours = new Date().getHours()
-            const isIngesting = (hours >= 6 && hours <= 8)
+            const isIngesting = (hours >= 6 && hours <= 9)
             if (stringJsonResponse.includes('model_name') || isIngesting) {
                 return {
                     raw: stringJsonResponse,
@@ -193,6 +193,20 @@ const getSystemStatus = async (system, response) => {
 
     } catch (error) {
         console.log(error)
+        
+        const hostname = error?.cause?.hostname || hostNameError
+        // Excemption for Veronica
+        const hours = new Date().getHours()
+        const isIngesting = (hours >= 6 && hours <= 9)
+        if(hostname && String(hostname).includes('hpchatbot') && isIngesting) {
+            return {
+                raw: JSON.stringify(error),
+                status: true,
+                message: `Ingest automation in progress`,
+                broadcastMessages: '[]'
+            }
+        }
+        
         return {
             raw: String(error),
             status: false,
@@ -241,19 +255,19 @@ const checkSystemStatus = async (system) => {
             if (hostname) console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
             console.log(' ')
 
-            // Excemption for Veronica
-            const hours = new Date().getHours()
-            const isIngesting = (hours >= 6 && hours <= 8)
-            if(hostname && String(hostname).includes('hpchatbot') && isIngesting) {
-                return {
-                    raw: JSON.stringify(error),
-                    status: true,
-                    message: `Ingest automation in progress`,
-                    broadcastMessages: '[]'
+        
+        if (attempts >= maxRetries) {
+                // Excemption for Veronica
+                const hours = new Date().getHours()
+                const isIngesting = (hours >= 6 && hours <= 9)
+                if(hostname && String(hostname).includes('hpchatbot') && isIngesting) {
+                    return {
+                        raw: JSON.stringify(error),
+                        status: true,
+                        message: `Ingest automation in progress`,
+                        broadcastMessages: '[]'
+                    }
                 }
-            }
-
-            if (attempts >= maxRetries) {
                 return {
                     raw: JSON.stringify(error),
                     status: false,
