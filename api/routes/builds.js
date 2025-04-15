@@ -34,7 +34,7 @@ router.get('/getById', async (req, res, next) => {
 router.post('/create', async (req, res, next) => {
     try {
         const buildData = JSON.stringify(req.body)
-        const newBuild = await Build.create(buildData)
+        const newBuild = await Build.create({ data: buildData})
         if (!newBuild) return res.status(400).json('Error creating Build')
 
         res.status(201).json("Build tracking data created successfully.")
