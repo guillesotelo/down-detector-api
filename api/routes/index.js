@@ -10,6 +10,7 @@ const eventRoutes = require('./event')
 const historyRoutes = require('./history')
 const userAlertRoutes = require('./userAlert')
 const subscriptionRoutes = require('./subscription')
+const buildRoutes = require('./builds')
 
 router.use('/user', userRoutes)
 router.use('/system', systemRoutes)
@@ -19,5 +20,6 @@ router.use('/event', eventRoutes)
 router.use('/history', historyRoutes)
 router.use('/userAlert', userAlertRoutes)
 router.use('/subscription', subscriptionRoutes)
+router.use('/builds', buildRoutes)
 
 module.exports = router, verifyToken
