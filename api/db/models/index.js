@@ -6,6 +6,7 @@ const AppLog = require("./AppLog");
 const UserAlert = require("./UserAlert");
 const Config = require("./Config");
 const Subscription = require("./Subscription");
+const Build = require("./Build");
 
 module.exports = {
   User,
@@ -16,4 +17,5 @@ module.exports = {
   UserAlert,
   Config,
   Subscription,
+  Build
 };
