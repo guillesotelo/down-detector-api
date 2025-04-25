@@ -1,7 +1,26 @@
 const mongoose = require('mongoose')
 
 const BuildSchema = new mongoose.Schema({
-    data: {
+    classifier: {
+        type: String
+    },
+    date: {
+        type: Date | String
+    },
+    target_branch: {
+        type: String
+    },
+    modules: {
+        type: String
+    },
+    active: {
+        type: Boolean,
+        default: true
+    },
+    name: {
+        type: String
+    },
+    rawData: {
         type: String
     },
 }, { timestamps: true })

@@ -33,8 +33,19 @@ router.get('/getById', async (req, res, next) => {
 //Create new build
 router.post('/create', async (req, res, next) => {
     try {
-        const buildData = JSON.stringify(req.body)
-        const newBuild = await Build.create({ data: buildData})
+        const { classifier, date, target_branch, modules, active, name } = req.body
+
+        const buildData = {
+            classifier,
+            date,
+            target_branch,
+            active,
+            name,
+            modules: typeof modules === 'string' ? modules : JSON.stringify(modules || '{}'),
+            rawData: classifier ? '' : JSON.stringify(req.body)
+        }
+
+        const newBuild = await Build.create(buildData)
         if (!newBuild) return res.status(400).json('Error creating Build')
 
         res.status(201).json("Build tracking data created successfully.")
@@ -47,18 +58,21 @@ router.post('/create', async (req, res, next) => {
 //Update build data
 router.post('/update', verifyToken, async (req, res, next) => {
     try {
-        const { _id, user } = req.body
-        let buildData = { ...req.body }
+        const { _id } = req.body
+        const { classifier, date, target_branch, modules, active, name } = req.body
+
+        const buildData = {
+            classifier,
+            date,
+            target_branch,
+            active,
+            name,
+            modules: typeof modules === 'string' ? modules : JSON.stringify(modules || '{}'),
+            rawData: classifier ? '' : JSON.stringify(req.body)
+        }
 
         const updated = await Build.findByIdAndUpdate(_id, buildData, { returnDocument: "after", useFindAndModify: false })
         if (!updated) return res.status(400).send('Error updating Build')
-
-        await AppLog.create({
-            username: user.username || 'anonymous',
-            email: user.username || 'anonymous',
-            details: `Alert updated: ${updated.url} - System: ${updated.systemId}`,
-            module: 'Build'
-        })
 
         res.status(200).json(updated)
     } catch (err) {
@@ -70,17 +84,9 @@ router.post('/update', verifyToken, async (req, res, next) => {
 //Remove build
 router.post('/remove', verifyToken, async (req, res, next) => {
     try {
-        const { _id, user } = req.body
-        const alert = await Build.findById(_id)
+        const { _id } = req.body
 
         await Build.deleteOne({ _id })
-
-        await AppLog.create({
-            username: user.username || '',
-            email: user.username || '',
-            details: `Alert removed: ${alert.url} - System: ${alert.systemId}`,
-            module: 'Build'
-        })
 
         res.status(200).json(`Build ${_id} deleted`)
     } catch (err) {
