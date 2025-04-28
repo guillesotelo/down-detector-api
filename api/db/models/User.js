@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    buildTrackerAccess: {
+        type: Boolean,
+        default: false
+    },
     systems: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'System'
