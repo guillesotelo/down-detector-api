@@ -9,6 +9,8 @@ const path = require('path')
 const fs = require('fs')
 const { htmlBuildingTemplate } = require("./api/templates/buildingTemplate")
 
+const PORT = process.env.PORT || 5000
+
 app.use((_, res, next) => {
   res.setHeader('Cache-Control', 'no-store')
   res.setHeader('X-Content-Type-Options', 'nosniff')
@@ -30,8 +32,6 @@ app.use((err, _, res, __) => {
   console.error(err.stack)
   res.status(500).send("Something broke!")
 })
-
-const PORT = process.env.PORT || 5000
 
 const buildPath = path.resolve(__dirname, '..', 'client', 'build') || ''
 const indexHtmlPath = buildPath ? path.resolve(buildPath, 'index.html') : ''
