@@ -6,7 +6,9 @@ const router = express.Router()
 //Get all builds
 router.get('/getAll', async (req, res, next) => {
     try {
-        const builds = await Build.find().sort({ createdAt: -1 })
+        const { getModules } = req.query
+        const selection = getModules ? '' : '-modules -rawData'
+        const builds = await Build.find().select(selection).sort({ createdAt: -1 })
         if (!builds || !builds.length) return res.status(200).send('No Builds found')
 
         res.status(200).json(builds)
