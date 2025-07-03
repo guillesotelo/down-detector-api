@@ -1,17 +1,37 @@
 const express = require('express')
-const { Build, AppLog } = require('../db/models')
+const { Build } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
 
 //Get all builds
 router.get('/getAll', async (req, res, next) => {
     try {
-        const { getModules } = req.query
-        const selection = getModules ? '' : '-modules -rawData'
-        const builds = await Build.find().select(selection).sort({ createdAt: -1 })
+        const builds = await Build.find().sort({ createdAt: -1 })
         if (!builds || !builds.length) return res.status(200).send('No Builds found')
 
         res.status(200).json(builds)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
+// Get unique builds
+router.get('/getUnique', async (req, res, next) => {
+    try {
+        const builds = await Build.find({ active: true }).sort({ createdAt: -1 })
+        let exists = {}
+        let filtered = []
+
+        if (!builds || !builds.length) return res.status(200).send('No Builds found')
+
+        filtered = builds.filter(b => {
+            if (exists[b.classifier + b.target_branch]) return false
+            exists[b.classifier + b.target_branch] = true
+            return true
+        })
+
+        res.status(200).json(filtered)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
@@ -26,6 +46,21 @@ router.get('/getById', async (req, res, next) => {
         if (!build) return res.status(404).send('Build not found')
 
         res.status(200).json(build)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
+//Get builds by classifier and branch
+router.get('/getByClassAndBranch', async (req, res, next) => {
+    try {
+        const { classifier, target_branch } = req.query
+        
+        const builds = await Build.find({ classifier, target_branch })
+        if (!builds) return res.status(400).send('Bad request')
+
+        res.status(200).json(builds)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
