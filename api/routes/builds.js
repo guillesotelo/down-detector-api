@@ -56,8 +56,8 @@ router.get('/getById', async (req, res, next) => {
 router.get('/getByClassAndBranch', async (req, res, next) => {
     try {
         const { classifier, target_branch } = req.query
-        
-        const builds = await Build.find({ classifier, target_branch })
+
+        const builds = await Build.find({ classifier, target_branch }).sort({ createdAt: -1 })
         if (!builds) return res.status(400).send('Bad request')
 
         res.status(200).json(builds)
