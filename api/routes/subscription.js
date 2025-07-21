@@ -46,13 +46,14 @@ router.post('/create', async (req, res, next) => {
                 const unsubscriptions = JSON.parse(system.unsubscriptions || '[]')
                 const index = unsubscriptions.indexOf(email)
                 if (index > -1) unsubscriptions.splice(index, 1)
-                
+
                 system.unsubscriptions = JSON.stringify(unsubscriptions)
                 system.save()
             }
             newsubScription = true
         } else {
-            newsubScription = await Subscription.create(req.body)
+            const exists = Subscription.findOne({ email })
+            newsubScription = exists || await Subscription.create(req.body)
         }
         if (!newsubScription) return res.status(400).json('Error creating Subscription')
 
