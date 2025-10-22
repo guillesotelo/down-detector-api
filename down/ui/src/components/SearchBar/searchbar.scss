@@ -1,0 +1,108 @@
+.searchbar {
+    &__container {
+        /* width: 20%; */
+        align-self: center;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0;
+        padding: .5rem .7rem;
+        border: 1px solid lightgray;
+        border-radius: 1rem;
+        transition: 0.3s;
+        // background-color: #F9FAFB;
+
+        &:focus-within {
+            border: 1px solid #105ec6;
+        }
+
+        &--dark {
+            /* width: 20%; */
+            align-self: center;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0;
+            padding: .5rem .7rem;
+            border: 1px solid #525252;
+            border-radius: 1rem;
+            transition: 0.3s;
+            background-color: transparent;
+
+            &:focus-within {
+                border: 1px solid #105ec6;
+            }
+        }
+    }
+
+    &__input {
+        border: none;
+        font-size: .9rem;
+        text-decoration: none;
+        width: 90%;
+        // background-color: #F9FAFB;
+        margin: 0 .2rem;
+
+        &:focus {
+            outline: none;
+        }
+
+        &::placeholder {
+            color: gray;
+            font-size: .9rem;
+        }
+
+        &--dark {
+            border: none;
+            font-size: .9rem;
+            text-decoration: none;
+            width: 90%;
+            background-color: transparent;
+            margin: 0 .2rem;
+            color: lightgray;
+
+            &:focus {
+                outline: none;
+            }
+
+            &::placeholder {
+                color: gray;
+                font-size: .9rem;
+            }
+        }
+    }
+
+    &__icon {
+        height: 18px;
+        width: auto;
+        cursor: pointer;
+        transition: 0.3s;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+
+        &:hover {
+            filter: invert(19%) sepia(69%) saturate(3578%) hue-rotate(207deg) brightness(98%) contrast(87%);
+        }
+
+        &--dark {
+            filter: invert(100%) sepia(0%) saturate(0%) hue-rotate(263deg) brightness(110%) contrast(108%);
+            cursor: pointer;
+
+            &:hover {
+                filter: invert(19%) sepia(69%) saturate(3578%) hue-rotate(207deg) brightness(98%) contrast(87%);
+            }
+        }
+    }
+
+}
+
+@media only screen and (max-width: 640px) {
+    .searchbar {
+        &__container {
+            width: 10rem;
+        }
+    }
+}

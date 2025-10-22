@@ -1,0 +1,96 @@
+.account {
+    &__container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 85vw;
+        padding: 2rem;
+        padding-bottom: 5rem;
+        overflow-x: hidden;
+    }
+
+    &__details {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        // align-items: center;
+        gap: 1rem;
+        width: 20rem;
+        box-shadow: .5rem 1rem 3rem rgba(0, 0, 0, 0.272);
+        padding: 2rem;
+        margin-top: 2rem;
+        border: 1px solid #00000013;
+        border-radius: 1rem;
+        opacity: 0;
+        animation: fade-in-down .5s ease-in forwards;
+
+        &-title {
+            margin: 0;
+        }
+
+        &-row {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+
+        &-icon {
+            height: 8rem;
+            opacity: .5;
+
+            &--dark {
+                height: 8rem;
+                filter: invert(100%) sepia(0%) saturate(0%) hue-rotate(263deg) brightness(40%) contrast(108%);
+            }
+        }
+
+        &--dark {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background-color: black;
+            gap: 1rem;
+            width: 20rem;
+            padding: 2rem;
+            margin-top: 2rem;
+            border: 1px solid #313131;
+            border-radius: 1rem;
+            opacity: 0;
+            animation: fade-in-down .5s ease-in forwards;
+
+            &-title {
+                margin: 0;
+            }
+
+            &-row {
+                display: flex;
+                flex-direction: row;
+                align-items: flex-end;
+                justify-content: space-between;
+                margin-top: 1rem;
+            }
+
+            &-icon {
+                height: 10vw;
+                opacity: 1;
+            }
+        }
+    }
+}
+
+@media only screen and (max-width: 640px) {
+    .account {
+        &__details {
+            gap: 1rem;
+            width: 70vw;
+
+            &--dark {
+                gap: 1rem;
+                width: 70vw;
+            }
+        }
+    }
+}

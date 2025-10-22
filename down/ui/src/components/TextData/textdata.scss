@@ -1,0 +1,18 @@
+.textdata {
+    &__container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-start;
+        overflow: auto;
+    }
+
+    &__label {
+        margin: 0;
+        font-weight: bold;
+    }
+
+    &__value {
+        margin: 0;
+    }
+}

@@ -1,0 +1,50 @@
+.btheader {
+    &__container {
+        box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.05);
+        height: 8vh;
+        border-bottom: 1px solid lightgray;
+        background-color: #F9F8F8;
+        position: fixed;
+        width: 100vw;
+        z-index: 3;
+        animation: fade-in-down .5s ease-in forwards;
+        top: 0;
+
+        &--dark {
+            height: 8vh;
+            border-bottom: 1px solid #424244;
+            background-color: #2E2E30;
+            position: fixed;
+            width: 100vw;
+            z-index: 3;
+            animation: fade-in-down .5s ease-in forwards;
+            top: 0;
+        }
+    }
+
+    &__wrapper {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin: 1rem;
+    }
+
+    &__row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    &__logo {
+        height: 2rem;
+        margin-left: .5rem;
+        cursor: pointer;
+        transition: .2s;
+
+        &:hover {
+            transform: scale(1.025);
+        }
+    }
+}

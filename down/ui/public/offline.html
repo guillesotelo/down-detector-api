@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="theme-color" content="#000000" />
+    <title>{process.env.APP_NAME}</title>
+    <style type="text/css">
+        html {
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .offline-container {
+            align-items: center;
+            width: 70%;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            padding: 2vw;
+            border-radius: 5px;
+            background: #757575;
+        }
+
+        .offline-text {
+            font-size: 1em;
+            color: rgb(0, 0, 0);
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="offline-container">
+        <h2 class="offline-text">
+            <span>Go back online to connect with {process.env.APP_NAME}</span>
+        </h2>
+    </div>
+</body>
+
+</html>

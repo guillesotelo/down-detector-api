@@ -1,0 +1,23 @@
+@import 'components';
+@import 'pages';
+@import 'animations';
+
+abbr {
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  background: transparent;
+  width: .3rem;
+  height: .5rem;
+  border-radius: .5rem;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(105, 105, 105, 0.564);
+  border-radius: .5rem;
+}
+
+.close-animation {
+  animation: close-animation .2s ease-in forwards !important;
+}

@@ -1,0 +1,68 @@
+.button {
+    &__default {
+        font-size: .9rem;
+        background-color: #D3AFAF;
+        // width: 100%;
+        padding: .55rem;
+        border-radius: .3rem;
+        cursor: pointer;
+        font-weight: normal;
+        transition: .1s;
+        border: none;
+        border: 1px solid transparent;
+        min-height: 1.3rem;
+        overflow: hidden;
+        min-width: fit-content;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    &__icon {
+        font-size: .9rem;
+        background-color: #D3AFAF;
+        // width: 100%;
+        padding: 0 .2rem;
+        border-radius: .3rem;
+        cursor: pointer;
+        font-weight: normal;
+        transition: .1s;
+        border: none;
+        border: 1px solid transparent;
+        min-height: 1.3rem;
+        overflow: hidden;
+        min-width: fit-content;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    &__svg {
+        height: 1rem;
+    }
+
+    &__bright {
+        font-size: 1rem;
+        background-color: #fff !important;
+        width: 100%;
+        padding: .6rem .8rem;
+        border-radius: .3vw;
+        cursor: pointer;
+        font-weight: normal;
+        transition: .1s;
+        border: none;
+        border: 1px solid transparent;
+        min-height: 1.3rem;
+        -webkit-tap-highlight-color: transparent;
+
+        &:hover {
+            background-color: #f0f0f0 !important;
+            transition: .1s;
+        }
+
+    }
+}
+
+@media only screen and (max-width: 640px) {}

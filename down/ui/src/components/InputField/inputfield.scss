@@ -1,0 +1,181 @@
+.inputfield {
+    &__container {
+        width: 100%;
+    }
+
+    &__label {
+        margin: 0 0 .5vh 0;
+        font-size: .8rem;
+        font-weight: normal;
+        width: 100%;
+        color: #696869;
+
+        &--dark {
+            margin: 0 0 .5vh 0;
+            font-size: .8rem;
+            font-weight: normal;
+            width: 100%;
+            color: #adadad;
+        }
+    }
+
+    &__default {
+        border: 1px solid lightgray;
+        font-family: 'Open Sans', sans-serif;
+        width: -webkit-fill-available;
+        margin: 0;
+        font-size: .9rem;
+        border-radius: 0.5rem;
+        min-height: 1.3rem;
+        width: -webkit-fill-available;
+        font-weight: normal;
+        padding: 0.5rem;
+
+        &:focus {
+            border: 1px solid #105ec6;
+            outline: none;
+        }
+
+        &:active {
+            border: 1px solid #105ec6;
+            outline: none;
+        }
+
+        &::placeholder {
+            color: #b5b5b5;
+            font-size: .9rem;
+        }
+
+        &--dark {
+            border: 1px solid #424244;
+            font-family: 'Open Sans', sans-serif;
+            width: -webkit-fill-available;
+            margin: 0;
+            font-size: .9rem;
+            border-radius: 0.5rem;
+            min-height: 1.3rem;
+            width: -webkit-fill-available;
+            font-weight: normal;
+            padding: 0.5rem;
+            background-color: #353535;
+            color: lightgray;
+
+            &:focus {
+                border: 1px solid #105ec6;
+                outline: none;
+            }
+
+            &:active {
+                border: 1px solid #105ec6;
+                outline: none;
+            }
+
+            &::placeholder {
+                color: #b5b5b5;
+                font-size: .9rem;
+            }
+        }
+    }
+}
+
+.textarea {
+    &__default {
+        border: 1px solid lightgray;
+        border-radius: .5vw;
+        font-size: .9rem;
+        padding: .4vw;
+        font-weight: normal;
+        resize: none;
+        font-family: 'Open Sans', sans-serif;
+        width: -webkit-fill-available;
+
+        &::placeholder {
+            color: #b5b5b5;
+            font-size: .9rem;
+        }
+
+        &:focus {
+            border: 1px solid #105ec6;
+            outline: none;
+        }
+
+        &:active {
+            border: 1px solid #105ec6;
+            outline: none;
+        }
+
+        &--dark {
+            border: 1px solid #424244;
+            border-radius: .5vw;
+            font-size: .9rem;
+            padding: .4vw;
+            font-weight: normal;
+            resize: none;
+            font-family: 'Open Sans', sans-serif;
+            width: -webkit-fill-available;
+            background-color: #353535;
+            color: lightgray;
+
+            &::placeholder {
+                color: #b5b5b5;
+                font-size: .9rem;
+            }
+
+            &:focus {
+                border: 1px solid #105ec6;
+                outline: none;
+            }
+
+            &:active {
+                border: 1px solid #105ec6;
+                outline: none;
+            }
+        }
+    }
+}
+
+@media only screen and (max-width: 640px) {
+    .inputfield {
+        &__default {
+            border: 1px solid lightgray;
+            border-radius: 1.5vw;
+            font-size: 1rem;
+            padding: 1.5vw;
+            font-weight: normal;
+
+            &:focus {
+                border: 1px solid #105ec6;
+                outline: none;
+            }
+
+            &:active {
+                border: 1px solid #105ec6;
+                outline: none;
+            }
+
+            &::placeholder {
+                color: #b5b5b5;
+                font-size: 1rem;
+            }
+        }
+    }
+
+    .textarea {
+        &__default {
+            border: 1px solid lightgray;
+            border-radius: 1.5vw;
+            font-size: 1rem;
+            padding: 2vw;
+            font-family: inherit;
+            font-weight: normal;
+            font-family: 'Open Sans', sans-serif !important;
+            resize: none;
+        }
+
+        &::placeholder {
+            color: #b5b5b5;
+            font-size: 1rem;
+            font-family: 'Open Sans', sans-serif !important;
+        }
+    }
+}
