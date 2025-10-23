@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 
 const sendEmail = async (data, to, subject) => {
   const tData = await transporter.sendMail({
-    from: `"{process.env.APP_NAME}" <hpdevp@company.com>`,
+    from: `"${process.env.APP_NAME}" <${process.env.APP_EMAIL}>`,
     to,
     subject,
     html: data.html

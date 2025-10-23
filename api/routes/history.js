@@ -73,7 +73,7 @@ router.post('/create', verifyToken, async (req, res, next) => {
 
         await AppLog.create({
             username: 'App',
-            email: 'hpdevp@company.com',
+            email: process.env.APP_EMAIL,
             details: `History created: ${newHistory.url} - Status: ${newHistory.status ? 'UP' : 'DOWN'} - System: ${newHistory.systemId}`,
             module: 'History'
         })
@@ -96,7 +96,7 @@ router.post('/update', verifyToken, async (req, res, next) => {
 
         await AppLog.create({
             username: 'App',
-            email: 'hpdevp@company.com',
+            email: process.env.APP_EMAIL,
             details: `History updated: ${updated.url} - Status: ${updated.status ? 'UP' : 'DOWN'} - System: ${updated.systemId}`,
             module: 'History'
         })
@@ -117,7 +117,7 @@ router.post('/remove', verifyToken, async (req, res, next) => {
 
         await AppLog.create({
             username: 'App',
-            email: 'hpdevp@company.com',
+            email: process.env.APP_EMAIL,
             details: `History removed: ${history.url} - System: ${history.systemId}`,
             module: 'History'
         })

@@ -91,7 +91,7 @@ const getSystemStatus = async (system, response) => {
         const stringJsonResponse = JSON.stringify(jsonResponse)
 
         if (systemName.includes('vira') || systemName.includes('confluence')) {
-            newBroadcast = await getBroadcastedMessages('https://confluence.company.biz/')
+            newBroadcast = await getBroadcastedMessages(`https://confluence.${process.env.COMPANY_NAME}.biz/`)
             if (jsonResponse.state && jsonResponse.state === 'RUNNING') {
                 return {
                     broadcastMessages: newBroadcast,
@@ -111,7 +111,7 @@ const getSystemStatus = async (system, response) => {
             }
         }
         else if (systemName.includes('gitlab')) {
-            newBroadcast = await getBroadcastedMessages('https://gitlab.cm.company.biz/api/v4/broadcast_messages')
+            newBroadcast = await getBroadcastedMessages(`https://gitlab.cm.${process.env.COMPANY_NAME}.biz/api/v4/broadcast_messages`)
             if (stringJsonResponse.split('ok').length && stringJsonResponse.split('ok').length >= 16) {
                 return {
                     broadcastMessages: newBroadcast,
@@ -447,7 +447,7 @@ const checkAllSystems = async () => {
                                     )
                                     return AppLog.create({
                                         username: 'App',
-                                        email: 'hpdevp@company.com',
+                                        email: process.env.APP_EMAIL,
                                         details: `Sent ${systemStatus ? 'UP' : 'DOWN'} notification to: ${owner.email}.`,
                                         module: 'API'
                                     })
@@ -545,7 +545,7 @@ const checkAllSystems = async () => {
                                     )
                                     return AppLog.create({
                                         username: 'App',
-                                        email: 'hpdevp@company.com',
+                                        email: process.env.APP_EMAIL,
                                         details: `Sent DOWN notification to: ${owner.email}.`,
                                         module: 'API'
                                     })
@@ -649,7 +649,7 @@ const checkAllSystems = async () => {
             // if (updatedCount) {
             //     await AppLog.create({
             //         username: 'App',
-            //         email: 'hpdevp@company.com',
+            //         email: process.env.APP_EMAIL,
             //         details: `Checked all systems. Updated: ${updatedCount}.`,
             //         module: 'API'
             //     })
