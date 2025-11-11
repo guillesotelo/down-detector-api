@@ -35,18 +35,39 @@ app.use((err, _, res, __) => {
 
 const buildPath = path.resolve(__dirname, '..', 'client', 'build') || ''
 const indexHtmlPath = buildPath ? path.resolve(buildPath, 'index.html') : ''
-const indexExists = buildPath && indexHtmlPath && fs.existsSync(indexHtmlPath)
+const buildExists = fs.existsSync(buildPath)
 
-if (process.env.NODE_ENV === 'production' && indexExists) {
-  app.use(express.static(path.join(__dirname, '..', 'client', 'build')))
-  app.get('*', (_, res) => {
-    res.sendFile(indexHtmlPath, (err) => {
-      if (err) {
-        console.error('Building app...', err)
-        res.status(500).send(htmlBuildingTemplate)
-      }
+const prevBuildPath = path.resolve(__dirname, '..', 'client', '_build') || ''
+const prevIndexHtmlPath = buildPath ? path.resolve(buildPath, 'index.html') : ''
+const prevBuildExists = fs.existsSync(prevBuildPath)
+
+if (process.env.NODE_ENV === 'production') {
+  if (buildExists) {
+    // Serve the current build
+    app.use(express.static(buildPath))
+    app.get('*', (_, res) => {
+      res.sendFile(indexHtmlPath, (err) => {
+        if (err) {
+          console.error('Error serving build:', err)
+          res.status(500).send(htmlBuildingTemplate)
+        }
+      })
     })
-  })
+  } else if (prevBuildExists) {
+    // Serve previous build if current build doesn't exist
+    app.use(express.static(prevBuildPath))
+    app.get('*', (_, res) => {
+      res.sendFile(prevIndexHtmlPath, (err) => {
+        if (err) {
+          console.error('Error serving previous build:', err)
+          res.status(500).send(htmlBuildingTemplate)
+        }
+      })
+    })
+  } else {
+    // Neither build exists → show building template
+    app.get('*', (_, res) => res.status(503).send(htmlBuildingTemplate))
+  }
 }
 
 app.get('/', (_, res) => {

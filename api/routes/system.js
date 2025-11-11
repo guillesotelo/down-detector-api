@@ -1,8 +1,11 @@
 const express = require('express')
-const { System, Event, History, AppLog, User } = require('../db/models')
+const { System, Event, AppLog, User } = require('../db/models')
 const { verifyToken } = require('../helpers')
-const { checkSystemStatus, runSystemCheckLoop } = require('../main/statusCheck')
+const { runSystemCheckLoop } = require('../main/statusCheck')
+const { sendEmail } = require('../mailer')
+const { newRequest } = require('../mailer/emailTemplates')
 const router = express.Router()
+require('dotenv').config();
 
 //Get all systems
 router.get('/getAll', async (req, res, next) => {
@@ -79,6 +82,20 @@ router.get('/getById', async (req, res, next) => {
     }
 })
 
+//Send System addition request
+router.post('/createRequest', async (req, res, next) => {
+    try {
+        await sendEmail(
+            { html: newRequest(req.body) },
+            process.env.OWNER_EMAIL,
+            `New request to add system`,
+        )
+        res.status(200).json('Message sent successfully')
+    } catch (error) {
+        console.error(error)
+    }
+})
+
 //Create new system
 router.post('/create', verifyToken, async (req, res, next) => {
     try {
@@ -105,16 +122,16 @@ router.post('/create', verifyToken, async (req, res, next) => {
                 if (!updated) console.error(`Unable to save downtime data: ${JSON.stringify(downtimeArray[index])}`)
             })
         }
-        
+
         await AppLog.create({
             username: user.username || '',
             email: user.email || '',
             details: `System created: ${newSystem.name} - ${newSystem.url}`,
             module: 'System'
         })
-        
+
         res.status(201).json(newSystem)
-        
+
         await runSystemCheckLoop()
     } catch (err) {
         console.error('Something went wrong!', err)
@@ -166,9 +183,9 @@ router.post('/update', verifyToken, async (req, res, next) => {
         })
 
         const populatedSystem = await System.findById(updatedSystem._id).populate('owners')
-        
+
         res.status(200).json(populatedSystem)
-        
+
         await runSystemCheckLoop()
     } catch (err) {
         console.error('Something went wrong!', err)
