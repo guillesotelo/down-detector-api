@@ -52,7 +52,7 @@ router.post('/create', async (req, res, next) => {
             }
             newsubScription = true
         } else {
-            const exists = Subscription.findOne({ email })
+            const exists = Subscription.findOne({ email, name })
             newsubScription = exists || await Subscription.create(req.body)
         }
         if (!newsubScription) return res.status(400).json('Error creating Subscription')
@@ -66,7 +66,7 @@ router.post('/create', async (req, res, next) => {
             module: 'Subscription'
         })
 
-        res.status(201).json(newsubScription)
+        res.status(201).json({ _id: 'saved!' })
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
