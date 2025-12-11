@@ -38,6 +38,7 @@ router.get('/getById', async (req, res, next) => {
 router.post('/create', async (req, res, next) => {
     try {
         const { username, email, name, user, isOwner, systemId } = req.body
+
         let newsubScription = null
 
         if (isOwner) {
@@ -53,8 +54,8 @@ router.post('/create', async (req, res, next) => {
             }
             newsubScription = {}
         } else {
-            const exists = Subscription.findOne({ email, name })
-            if (exists) {
+            const exists = Subscription.findOne({ email, name }).exec()
+            if (exists && exists._id) {
                 console.log(`Already subscribed! - ${email} for ${name}`)
                 return res.status(200).json({ _id: 'Already saved!' })
             }
