@@ -41,6 +41,7 @@ router.post('/create', async (req, res, next) => {
         let newsubScription = null
 
         if (isOwner) {
+            console.log('Trigger subscription / unsubscription by Owner')
             const system = await System.findById(systemId)
             if (system) {
                 const unsubscriptions = JSON.parse(system.unsubscriptions || '[]')
@@ -50,14 +51,18 @@ router.post('/create', async (req, res, next) => {
                 system.unsubscriptions = JSON.stringify(unsubscriptions)
                 system.save()
             }
-            newsubScription = true
+            newsubScription = {}
         } else {
             const exists = Subscription.findOne({ email, name })
-            newsubScription = exists || await Subscription.create(req.body)
+            if (exists) {
+                console.log(`Already subscribed! - ${email} for ${name}`)
+                return res.status(200).json({ _id: 'Already saved!' })
+            }
+
+            console.log('Creating new subscription...')
+            newsubScription = await Subscription.create(req.body)
         }
         if (!newsubScription) return res.status(400).json('Error creating Subscription')
-
-        await runSystemCheckLoop()
 
         await AppLog.create({
             username: user.username || username,
@@ -66,7 +71,7 @@ router.post('/create', async (req, res, next) => {
             module: 'Subscription'
         })
 
-        res.status(201).json({ _id: 'saved!' })
+        res.status(201).json(newsubScription)
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
