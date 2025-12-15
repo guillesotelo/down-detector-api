@@ -449,7 +449,7 @@ const checkAllSystems = async () => {
                                     return AppLog.create({
                                         username: 'App',
                                         email: process.env.APP_EMAIL,
-                                        details: `Sent ${systemStatus ? 'UP' : 'DOWN'} notification to: ${owner.email}.`,
+                                        details: `Sent ${systemStatus ? 'UP' : 'DOWN'}  notification for ${name} to: ${owner.email}.`,
                                         module: 'API'
                                     })
                                 }))
@@ -547,7 +547,7 @@ const checkAllSystems = async () => {
                                     return AppLog.create({
                                         username: 'App',
                                         email: process.env.APP_EMAIL,
-                                        details: `Sent DOWN notification to: ${owner.email}.`,
+                                        details: `Sent DOWN  notification for ${name} to: ${owner.email}.`,
                                         module: 'API'
                                     })
                                 }))
