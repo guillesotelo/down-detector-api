@@ -30,6 +30,49 @@ router.get('/getAll', async (req, res, next) => {
     }
 })
 
+// Get all within a range
+router.get('/getRange', async (req, res) => {
+    try {
+        const { systemId, getRaw, from, till } = req.query
+
+        const query = {}
+
+        // Optional systemId filter
+        if (systemId) {
+            query.systemId = systemId
+        }
+
+        // Optional date range filter
+        if (from || till) {
+            query.createdAt = {}
+
+            if (from) {
+                query.createdAt.$gte = new Date(from)
+            }
+
+            if (till) {
+                query.createdAt.$lte = new Date(till)
+            }
+        }
+
+        const select = `${getRaw === 'true' ? '' : '-raw'} -description`
+
+        const histories = await History
+            .find(query)
+            .select(select)
+            .sort({ createdAt: -1 })
+
+        if (!histories.length) {
+            return res.status(200).send('No histories found')
+        }
+
+        res.status(200).json(histories)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
 //Get History by ID
 router.get('/getById', async (req, res, next) => {
     try {
