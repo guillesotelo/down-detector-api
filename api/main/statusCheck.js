@@ -217,7 +217,6 @@ const getSystemStatus = async (system, response) => {
     }
 }
 
-let hostNameError = null
 const checkSystemStatus = async (system) => {
     const { url, timeout, name, broadcastMessages } = system
     const maxRetries = 2
@@ -229,53 +228,54 @@ const checkSystemStatus = async (system) => {
                 return {
                     raw: '{}',
                     status: false,
+                    attempts: 1, // Invalid URL fails on first try
                     message: `URL not valid: "${url}"`,
                     broadcastMessages: broadcastMessages || '[]'
                 }
             }
 
-            hostNameError = url
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), timeout && typeof timeout === 'number' ? timeout : 10000)
+            
             const response = await fetch(url, { signal: controller.signal })
             clearTimeout(timeoutId)
 
-            console.log(`[${checkIndex}]`, name)
-            checkIndex += 1
-            hostNameError = null
-
-            return getSystemStatus(system, response)
+            // Pass attempts to getSystemStatus if it needs to log it
+            return getSystemStatus(system, response, attempts + 1)
 
         } catch (error) {
-            const hostname = error?.cause?.hostname || hostNameError
-            hostNameError = null
-            checkIndex += 1
             attempts += 1
-
-            console.log(' ')
-            if (hostname) console.log('---------- (!) Error Checking URL:', hostname + ' (!) ----------')
-            console.log(' ')
-
+            const hostname = error?.cause?.hostname || url
 
             if (attempts >= maxRetries) {
-                // Excemption for Veronica
+                // Determine the most descriptive error string
+                const detailedError = error.message || error.name || "Unknown system exception";
+                
                 const hours = new Date().getHours()
                 const isIngesting = (hours >= 6 && hours <= 9)
+                
                 if (hostname && String(hostname).includes('hpchatbot') && isIngesting) {
                     return {
-                        raw: JSON.stringify(error),
+                        raw: JSON.stringify(error, Object.getOwnPropertyNames(error)),
                         status: true,
+                        attempts,
                         message: `Ingest automation in progress`,
                         broadcastMessages: '[]'
                     }
                 }
+
+                // Final Failure Return
                 return {
-                    raw: JSON.stringify(error),
+                    raw: JSON.stringify(error, Object.getOwnPropertyNames(error)),
                     status: false,
-                    message: `Unexpected error after ${attempts} attempts: ${error}`,
+                    attempts, // Now tracking how many times we tried
+                    message: `${detailedError} (Failed after ${attempts} attempts)`, 
                     broadcastMessages: '[]'
                 }
             }
+            
+            // Optional: Log the retry to the console for real-time monitoring
+            console.log(`Retrying ${hostname}... (Attempt ${attempts}/${maxRetries})`);
         }
     }
 }
