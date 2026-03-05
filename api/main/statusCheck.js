@@ -236,7 +236,7 @@ const checkSystemStatus = async (system) => {
 
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), timeout && typeof timeout === 'number' ? timeout : 10000)
-            
+
             const response = await fetch(url, { signal: controller.signal })
             clearTimeout(timeoutId)
 
@@ -249,11 +249,12 @@ const checkSystemStatus = async (system) => {
 
             if (attempts >= maxRetries) {
                 // Determine the most descriptive error string
-                const detailedError = error.message || error.name || "Unknown system exception";
-                
+                let detailedError = error.message || error.name || "Unknown system exception";
+                detailedError = detailedError.split('').map((c, i) => i === 0 ? c.toUpperCase() : c).join('')
+
                 const hours = new Date().getHours()
                 const isIngesting = (hours >= 6 && hours <= 9)
-                
+
                 if (hostname && String(hostname).includes('hpchatbot') && isIngesting) {
                     return {
                         raw: JSON.stringify(error, Object.getOwnPropertyNames(error)),
@@ -269,11 +270,11 @@ const checkSystemStatus = async (system) => {
                     raw: JSON.stringify(error, Object.getOwnPropertyNames(error)),
                     status: false,
                     attempts, // Now tracking how many times we tried
-                    message: `${detailedError} (Failed after ${attempts} attempts)`, 
+                    message: `${detailedError} (Failed after ${attempts} attempts)`,
                     broadcastMessages: '[]'
                 }
             }
-            
+
             // Optional: Log the retry to the console for real-time monitoring
             console.log(`Retrying ${hostname}... (Attempt ${attempts}/${maxRetries})`);
         }
