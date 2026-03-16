@@ -161,12 +161,12 @@ const getSystemStatus = async (system, response) => {
 
         else if (systemName.includes('veronica')) {
             const hours = new Date().getHours()
-            const isIngesting = (hours >= 6 && hours <= 9)
+            const isIngesting = (hours >= 6 && hours < 8)
             const uiIsUp = await fetch(system.url.replace('api/get_model_settings', '')).catch(_ => false)
             if (uiIsUp && (stringJsonResponse.includes('model_name') || isIngesting)) {
                 return {
                     raw: stringJsonResponse,
-                    status: true,
+                    status: false,
                     message: isIngesting ? 'Ingest automation in progress' : `System up and running`
                 }
             }
