@@ -166,7 +166,7 @@ const getSystemStatus = async (system, response) => {
             if (uiIsUp && (stringJsonResponse.includes('model_name') || isIngesting)) {
                 return {
                     raw: stringJsonResponse,
-                    status: false,
+                    status: true,
                     message: isIngesting ? 'Ingest automation in progress' : `System up and running`
                 }
             }
@@ -198,11 +198,11 @@ const getSystemStatus = async (system, response) => {
         const hostname = error?.cause?.hostname || hostNameError
         // Excemption for Veronica
         const hours = new Date().getHours()
-        const isIngesting = (hours >= 6 && hours <= 9)
+        const isIngesting = (hours >= 6 && hours < 8)
         if (hostname && String(hostname).includes('hpchatbot') && isIngesting) {
             return {
                 raw: JSON.stringify(error),
-                status: true,
+                status: false,
                 message: `Ingest automation in progress`,
                 broadcastMessages: '[]'
             }
