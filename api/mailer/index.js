@@ -24,9 +24,10 @@ const sendEmail = async (data, to, subject) => {
   })
 
   if (tData) {
-    console.log(`*** Mail sent successfully: `, String(tData))
+    console.log(`*** Mail sent successfully: `, JSON.stringify(tData))
     return tData
   }
+  else return null
 }
 
 module.exports = {

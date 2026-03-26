@@ -85,11 +85,12 @@ router.get('/getById', async (req, res, next) => {
 //Send System addition request
 router.post('/createRequest', async (req, res, next) => {
     try {
-        await sendEmail(
+        const sent = await sendEmail(
             { html: newRequest(req.body) },
             process.env.OWNER_EMAIL,
             `New request to add system`,
         )
+        if(!sent) return res.status(400).json({ message: 'Error sending message' })
         res.status(200).json('Message sent successfully')
     } catch (error) {
         console.error(error)
