@@ -1,12 +1,31 @@
 const express = require('express')
-const { Event, AppLog } = require('../db/models')
+const { Event, System, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
+
+const DEFAULT_DASHBOARD = 'SWEP SWF'
+
+const getSystemIdsForDashboard = async (dashboard) => {
+    const targetDashboard = dashboard || DEFAULT_DASHBOARD
+    const dashboardQuery = targetDashboard === DEFAULT_DASHBOARD
+        ? { $or: [{ dashboard: DEFAULT_DASHBOARD }, { dashboard: { $exists: false } }, { dashboard: null }, { dashboard: '' }] }
+        : { dashboard: targetDashboard }
+    const systems = await System.find(dashboardQuery).select('_id')
+    return systems.map(s => s._id.toString())
+}
 
 //Get all events
 router.get('/getAll', async (req, res, next) => {
     try {
-        const events = await Event.find().sort({ createdAt: -1 })
+        const { dashboard } = req.query
+
+        let query = {}
+        if (dashboard) {
+            const systemIds = await getSystemIdsForDashboard(dashboard)
+            query.systemId = { $in: systemIds }
+        }
+
+        const events = await Event.find(query).sort({ createdAt: -1 })
         if (!events || !events.length) return res.status(200).send('No events found')
 
         res.status(200).json(events)

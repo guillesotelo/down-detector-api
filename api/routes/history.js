@@ -1,22 +1,32 @@
 const express = require('express')
-const { History, AppLog } = require('../db/models')
+const { History, System, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const router = express.Router()
 const moment = require('moment')
 
+const DEFAULT_DASHBOARD = 'SWEP SWF'
+
+const getSystemIdsForDashboard = async (dashboard) => {
+    const targetDashboard = dashboard || DEFAULT_DASHBOARD
+    const dashboardQuery = targetDashboard === DEFAULT_DASHBOARD
+        ? { $or: [{ dashboard: DEFAULT_DASHBOARD }, { dashboard: { $exists: false } }, { dashboard: null }, { dashboard: '' }] }
+        : { dashboard: targetDashboard }
+    const systems = await System.find(dashboardQuery).select('_id')
+    return systems.map(s => s._id.toString())
+}
+
 //Get all histories
 router.get('/getAll', async (req, res, next) => {
     try {
-        const { systemId, getRaw } = req.query
-        const startDate = new Date()
-        startDate.setDate(startDate.getDate() - 16)
-        startDate.setHours(0, 0, 0, 0)
-        const endDate = new Date()
+        const { systemId, getRaw, dashboard } = req.query
 
-        // const query = systemId ? { systemId, createdAt: { $gte: startDate, $lte: endDate } }
-        //     : { createdAt: { $gte: startDate, $lte: endDate } }
-
-        const query = systemId ? { systemId } : {}
+        let query = {}
+        if (systemId) {
+            query.systemId = systemId
+        } else if (dashboard) {
+            const systemIds = await getSystemIdsForDashboard(dashboard)
+            query.systemId = { $in: systemIds }
+        }
 
         const select = `${getRaw === 'true' ? '' : '-raw'} -description`
 

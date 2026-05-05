@@ -1,16 +1,34 @@
 const express = require('express')
-const { UserAlert, AppLog } = require('../db/models')
+const { UserAlert, System, AppLog } = require('../db/models')
 const { verifyToken } = require('../helpers')
 const { runSystemCheckLoop } = require('../main/statusCheck')
 const router = express.Router()
 
+const DEFAULT_DASHBOARD = 'SWEP SWF'
+
+const getSystemIdsForDashboard = async (dashboard) => {
+    const targetDashboard = dashboard || DEFAULT_DASHBOARD
+    const dashboardQuery = targetDashboard === DEFAULT_DASHBOARD
+        ? { $or: [{ dashboard: DEFAULT_DASHBOARD }, { dashboard: { $exists: false } }, { dashboard: null }, { dashboard: '' }] }
+        : { dashboard: targetDashboard }
+    const systems = await System.find(dashboardQuery).select('_id')
+    return systems.map(s => s._id.toString())
+}
+
 //Get all UserAlerts
 router.get('/getAll', async (req, res, next) => {
     try {
-        const { systemId } = req.query
-        const userAlerts = systemId ?
-            await UserAlert.find({ systemId }).sort({ createdAt: -1 }) :
-            await UserAlert.find().sort({ createdAt: -1 })
+        const { systemId, dashboard } = req.query
+
+        let query = {}
+        if (systemId) {
+            query.systemId = systemId
+        } else if (dashboard) {
+            const systemIds = await getSystemIdsForDashboard(dashboard)
+            query.systemId = { $in: systemIds }
+        }
+
+        const userAlerts = await UserAlert.find(query).sort({ createdAt: -1 })
         if (!userAlerts || !userAlerts.length) return res.status(200).send('No User Alerts found')
 
         res.status(200).json(userAlerts)

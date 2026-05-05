@@ -1,6 +1,9 @@
 const mongoose = require('mongoose')
 
 const systemSchema = new mongoose.Schema({
+    dashboard: {
+        type: String
+    },
     name: {
         type: String
     },

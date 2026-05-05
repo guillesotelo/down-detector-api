@@ -4,6 +4,9 @@ const historySchema = new mongoose.Schema({
     systemId: {
         type: String
     },
+    dashboard: {
+        type: String
+    },
     url: {
         type: String
     },

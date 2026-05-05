@@ -28,7 +28,13 @@ router.get('/getAll', async (req, res, next) => {
 //Get active systems
 router.get('/getActive', async (req, res, next) => {
     try {
-        const systems = await System.find({ active: true }).select('-raw -logo').sort({ createdAt: -1 })
+        const { dashboard } = req.query
+        const DEFAULT_DASHBOARD = 'SWEP SWF'
+        const targetDashboard = dashboard || DEFAULT_DASHBOARD
+        const dashboardQuery = targetDashboard === DEFAULT_DASHBOARD
+            ? { $or: [{ dashboard: DEFAULT_DASHBOARD }, { dashboard: { $exists: false } }, { dashboard: null }, { dashboard: '' }] }
+            : { dashboard: targetDashboard }
+        const systems = await System.find({ active: true, ...dashboardQuery }).select('-raw -logo').sort({ createdAt: -1 })
         if (!systems || !systems.length) return res.status(200).send('No systems found')
 
         res.status(200).json(systems)

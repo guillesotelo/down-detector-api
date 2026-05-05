@@ -110,6 +110,15 @@ const getSystemStatus = async (system, response) => {
                 }
             }
         }
+         else if (systemName.includes('jenkins')) {
+            if (textResponse.includes('Authentication required')) {
+                return {
+                    raw: stringJsonResponse,
+                    status: true,
+                    message: `System up and running`
+                }
+            }
+        }
         else if (systemName.includes('gitlab')) {
             newBroadcast = await getBroadcastedMessages(`https://gitlab.cm.${process.env.COMPANY_NAME}.biz/api/v4/broadcast_messages`)
             if (stringJsonResponse.split('ok').length && stringJsonResponse.split('ok').length >= 16) {
@@ -121,7 +130,7 @@ const getSystemStatus = async (system, response) => {
                 }
             }
         }
-        else if (systemName.includes('gerrit')) {
+        else if (systemName.includes('gerrit') && !(system.dashboard || '').includes('INFO')) {
             if (jsonResponse.gerrit) {
                 return {
                     raw: stringJsonResponse,
