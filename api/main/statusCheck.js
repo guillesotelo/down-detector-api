@@ -9,6 +9,192 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 let intervalId = null
 let checkIndex = 1
 
+const chartDataCache = new Map()
+
+const getHourKey = (date) => {
+    const d = new Date(date)
+    d.setMinutes(0, 0, 0)
+    return d.getTime()
+}
+
+const getHourISOString = (hoursAgo) => {
+    const today = new Date()
+    today.setMinutes(0, 0, 0)
+    today.setHours(today.getHours() - hoursAgo)
+    return today.toISOString()
+}
+
+const processChartSet = (history, hourSet = 336) => {
+    if (!history || !history.length) return []
+
+    const lastRegister = history[0]
+    const firstRegister = history[history.length - 1]
+    const lastStatus = lastRegister.status ? 1 : 0
+
+    const firstTimeMs = getHourKey(firstRegister.createdAt)
+    const lastTimeMs = getHourKey(lastRegister.createdAt)
+
+    const allHours = new Map()
+
+    const sortedOldToNew = [...history].reverse()
+
+    sortedOldToNew
+        .map((item, i, arr) => {
+            if (!item.status) {
+                const currentTime = new Date(item.createdAt).getTime()
+                const nextTime = arr[i + 1] ? new Date(arr[i + 1].createdAt).getTime() : null
+                const nextStatus = arr[i + 1] ? arr[i + 1].status : item.status
+                const isBusy = Date.now() - currentTime < 120000
+                if (isBusy || (nextStatus && nextStatus !== item.status && nextTime && nextTime - currentTime < 120000)) {
+                    return { ...item, status: 'BUSY', busy: true }
+                }
+            }
+            return item
+        })
+        .forEach((register, i, arr) => {
+            const timeMs = getHourKey(register.createdAt)
+            const currentTime = new Date(register.createdAt).getTime()
+
+            if (allHours.has(timeMs)) {
+                const existing = allHours.get(timeMs)
+                const prevTime = new Date(existing.createdAt).getTime()
+
+                if (arr.length < 3) {
+                    allHours.set(timeMs, {
+                        ...register,
+                        status: register.status ? 1 : 0,
+                        busy: existing.busy || false,
+                        isDown: !register.status || !existing.status
+                    })
+                }
+
+                const nextTime = arr[i + 1] ? new Date(arr[i + 1].createdAt).getTime() : null
+                if (nextTime && (nextTime - currentTime < 180000) && arr[i + 1].status !== register.status) {
+                    allHours.set(timeMs, {
+                        ...register,
+                        status: arr[i + 1].status ? 1 : 0,
+                        busy: arr[i + 1].busy || false,
+                        isDown: !arr[i + 1].status || !register.status || !allHours.get(timeMs).status
+                    })
+                } else if (currentTime - prevTime < 180000) {
+                    allHours.set(timeMs, {
+                        ...register,
+                        status: register.status ? 1 : 0,
+                        busy: existing.busy || false,
+                        isDown: !register.status || !existing.status
+                    })
+                } else {
+                    const nextRegisteredHour = arr[i + 1] ? new Date(arr[i + 1].createdAt).getTime() : null
+                    const currentHour = new Date(register.createdAt).getTime()
+                    if (nextRegisteredHour && nextRegisteredHour - currentHour > 3600000) {
+                        const nextHourDate = new Date(register.createdAt)
+                        nextHourDate.setHours(nextHourDate.getHours() + 1)
+                        nextHourDate.setMinutes(0, 0, 0)
+                        allHours.set(nextHourDate.getTime(), {
+                            ...register,
+                            createdAt: nextHourDate.toISOString(),
+                            status: register.status ? 1 : 0,
+                            isDown: !register.status || !allHours.get(timeMs).status
+                        })
+                    }
+                }
+            } else {
+                allHours.set(timeMs, {
+                    ...register,
+                    status: register.status ? 1 : 0,
+                    isDown: !register.status
+                })
+            }
+        })
+
+    let prevStatus = 1
+    let prevBusy = false
+    let prevIsDown = false
+
+    const set = Array.from({ length: hourSet + 2 }).map((_, i) => {
+        const timeIso = getHourISOString(hourSet - i)
+        const timeMs = new Date(timeIso).getTime()
+        let status = lastStatus
+        let unknown = false
+        let busy = false
+        let isDown = false
+
+        if (allHours.size > 1) {
+            if (timeMs > lastTimeMs) {
+                // After last registered: use lastStatus (already initialized above)
+            } else if (timeMs < firstTimeMs) {
+                unknown = true
+            } else if (allHours.has(timeMs)) {
+                const register = allHours.get(timeMs)
+                status = register.status
+                prevStatus = register.status
+                busy = register.busy || false
+                prevBusy = register.busy || false
+                isDown = register.isDown
+                prevIsDown = register.isDown
+            } else {
+                status = prevStatus
+                busy = prevBusy
+                isDown = prevIsDown
+                prevStatus = 1
+                prevBusy = false
+                prevIsDown = false
+            }
+        } else if (allHours.size === 1) {
+            status = allHours.values().next().value.status
+            if (timeMs < firstTimeMs) unknown = true
+        }
+
+        return { time: timeIso, status, unknown, busy, isDown }
+    })
+
+    return set
+}
+
+const buildChartDataForSystem = (systemId, history, alerts) => {
+    const reportedHourKeys = new Set()
+    if (alerts && alerts.length) {
+        alerts.forEach(el => {
+            if (el.createdAt) reportedHourKeys.add(getHourKey(el.createdAt))
+        })
+    }
+
+    const twoWeeksSet = processChartSet(history, 336)
+    const lastDaySet = twoWeeksSet.slice(Math.max(twoWeeksSet.length - 25, 0))
+
+    const markReported = (item) => {
+        const ms = new Date(item.time).getTime()
+        return reportedHourKeys.has(ms) ? { ...item, reported: true } : item
+    }
+
+    return {
+        systemId: systemId.toString(),
+        lastDayData: lastDaySet.map(markReported),
+        completeData: twoWeeksSet.map(markReported)
+    }
+}
+
+const updateChartDataCache = async (systems) => {
+    try {
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 16)
+        startDate.setHours(0, 0, 0, 0)
+
+        await Promise.all(systems.map(async (system) => {
+            const systemId = system._id.toString()
+            const [history, alerts] = await Promise.all([
+                History.find({ systemId, createdAt: { $gte: startDate } })
+                    .select('-raw -description')
+                    .sort({ createdAt: -1 }),
+                UserAlert.find({ systemId }).sort({ createdAt: -1 })
+            ])
+            chartDataCache.set(systemId, buildChartDataForSystem(systemId, history, alerts))
+        }))
+    } catch (error) {
+        console.error('Error updating chart data cache:', error)
+    }
+}
+
 const zuul_events = [
     "ad-zen-gerrit",
     "artadfsp-gerrit",
@@ -347,7 +533,7 @@ const checkAllSystems = async () => {
             console.log(' ')
             console.log('************ Checking Systems ************')
             console.log(' ')
-            const promises = systems.map(async (system) => {
+            const promises = systems.map(async (system, index) => {
                 const {
                     _id,
                     name,
@@ -361,6 +547,9 @@ const checkAllSystems = async () => {
                 } = system
 
                 const { status, firstStatus, raw, broadcastMessages, message } = await checkSystemStatus(system)
+                
+                console.log(`[${index}] - ${name}`)
+
                 const subscribers = await Subscription.find({ systemId: _id })
 
                 let systemStatus = status
@@ -657,6 +846,7 @@ const checkAllSystems = async () => {
             console.log(' ')
             console.log(`[${new Date().toLocaleString()}] Checking completed. System status updated: ${updatedCount}`)
             console.log(' ')
+            await updateChartDataCache(systems)
             // if (updatedCount) {
             //     await AppLog.create({
             //         username: 'App',
@@ -690,5 +880,7 @@ const runSystemCheckLoop = async (interval) => {
 module.exports = {
     checkSystemStatus,
     checkAllSystems,
-    runSystemCheckLoop
+    runSystemCheckLoop,
+    chartDataCache,
+    buildChartDataForSystem
 }

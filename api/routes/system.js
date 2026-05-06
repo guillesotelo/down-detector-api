@@ -1,7 +1,7 @@
 const express = require('express')
-const { System, Event, AppLog, User } = require('../db/models')
+const { System, Event, AppLog, User, History, UserAlert } = require('../db/models')
 const { verifyToken } = require('../helpers')
-const { runSystemCheckLoop } = require('../main/statusCheck')
+const { runSystemCheckLoop, chartDataCache, buildChartDataForSystem } = require('../main/statusCheck')
 const { sendEmail } = require('../mailer')
 const { newRequest } = require('../mailer/emailTemplates')
 const router = express.Router()
@@ -252,6 +252,44 @@ router.post('/remove', verifyToken, async (req, res, next) => {
         if (!removed) return res.status(400).send('Error deleting system')
 
         res.status(200).json(`System ${_id} deleted`)
+    } catch (err) {
+        console.error('Something went wrong!', err)
+        res.status(500).send('Server Error')
+    }
+})
+
+// Get pre-computed chart data for all active systems in a dashboard
+router.get('/chartData', async (req, res) => {
+    try {
+        const { dashboard } = req.query
+        const DEFAULT_DASHBOARD = 'SWEP SWF'
+        const targetDashboard = dashboard || DEFAULT_DASHBOARD
+        const dashboardQuery = targetDashboard === DEFAULT_DASHBOARD
+            ? { $or: [{ dashboard: DEFAULT_DASHBOARD }, { dashboard: { $exists: false } }, { dashboard: null }, { dashboard: '' }] }
+            : { dashboard: targetDashboard }
+
+        const systems = await System.find({ active: true, ...dashboardQuery }).select('_id')
+        const systemIds = systems.map(s => s._id.toString())
+
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 16)
+        startDate.setHours(0, 0, 0, 0)
+
+        const result = await Promise.all(systemIds.map(async (id) => {
+            if (chartDataCache.has(id)) return chartDataCache.get(id)
+
+            const [history, alerts] = await Promise.all([
+                History.find({ systemId: id, createdAt: { $gte: startDate } })
+                    .select('-raw -description')
+                    .sort({ createdAt: -1 }),
+                UserAlert.find({ systemId: id }).sort({ createdAt: -1 })
+            ])
+            const chartData = buildChartDataForSystem(id, history, alerts)
+            chartDataCache.set(id, chartData)
+            return chartData
+        }))
+
+        res.status(200).json(result.filter(Boolean))
     } catch (err) {
         console.error('Something went wrong!', err)
         res.status(500).send('Server Error')
